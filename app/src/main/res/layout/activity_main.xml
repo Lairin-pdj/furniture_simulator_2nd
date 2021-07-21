@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.cameratest.MainActivity">
+
+    <!-- sceneform용 코드 추후 조사 후 활용 가능성 있음
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <fragment
+            android:id="@+id/ux_fragment"
+            android:name="com.google.ar.sceneform.ux.ArFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>-->
+
+    <FrameLayout
+        android:id="@+id/preview_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
+        <Switch
+            android:id="@+id/switch1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="80dp"
+            android:layout_marginTop="25dp"
+            android:layout_gravity="top|right"
+            android:textOff="off"
+            android:textOn="on"
+            android:text="Plane"
+            android:showText="false"
+            android:checked="true"/>
+
+        <Button
+            android:id="@+id/Button1"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="20dp"
+            android:background="@android:drawable/presence_invisible"
+            android:onClick="captureClick" />
+
+        <Button
+            android:id="@+id/Button3"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="end|bottom"
+            android:layout_marginEnd="20dp"
+            android:layout_marginRight="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@android:drawable/ic_menu_myplaces"
+            android:onClick="createMenuClick" />
+
+        <Button
+            android:id="@+id/button2d"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="right|bottom"
+            android:layout_marginRight="35dp"
+            android:layout_marginBottom="110dp"
+            android:background="@drawable/button2d"
+            android:visibility="invisible"
+            android:onClick="button2dClick"/>
+
+        <Button
+            android:id="@+id/button3d"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="right|bottom"
+            android:layout_marginRight="110dp"
+            android:layout_marginBottom="50dp"
+            android:background="@drawable/button3d"
+            android:visibility="invisible"
+            android:onClick="button3dClick"/>
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="wrap_content"
+            android:layout_height="200dp"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="200dp"
+            android:scaleType="fitCenter"
+            android:adjustViewBounds="true"
+            app:srcCompat="@drawable/planetutorial" />
+
+        <android.opengl.GLSurfaceView
+            android:id="@+id/glsurfaceview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top" />
+
+        <!-- 기존 화면 프리뷰
+        <com.example.cameratest.CameraPreview
+            android:id="@+id/preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="visible" /> -->
+
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="100dp"
+        android:layout_height="120dp"
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/imageView_preview"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:adjustViewBounds="true"
+            android:background="@color/black"
+            android:gravity="top"
+            android:scaleType="fitCenter"
+            android:visibility="invisible"
+            app:srcCompat="@drawable/furniture_vector_icons_111434" />
+
+        <TextView
+            android:id="@+id/textView_preview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="TextView"
+            android:visibility="invisible" />
+
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/frame_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/furniture_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left|bottom"
+            android:layout_marginLeft="20dp"
+            android:layout_marginBottom="216dp"
+            android:text="가구목록"
+            android:textSize="23sp"
+            android:visibility="invisible" />
+
+        <Button
+            android:id="@+id/Button2"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_gravity="start|bottom"
+            android:layout_marginStart="20dp"
+            android:layout_marginLeft="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@android:drawable/ic_menu_add"
+            android:onClick="furnitureMenuClick" />
+
+        <Button
+            android:id="@+id/button_reset"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="top|right"
+            android:layout_marginTop="20dp"
+            android:layout_marginRight="20dp"
+            android:background="@android:drawable/ic_delete"
+            android:onClick="resetClick"/>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/furniture_list"
+            android:layout_width="wrap_content"
+            android:layout_height="250dp"
+            android:layout_gravity="bottom"
+            android:background="@color/white"
+            android:visibility="invisible">
+
+        </android.support.v7.widget.RecyclerView>
+
+    </FrameLayout>
+
+</RelativeLayout>

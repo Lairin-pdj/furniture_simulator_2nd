@@ -1,0 +1,8 @@
+version https://git-lfs.github.com/spec/v1
+oid sha256:8a31a0798d8819795de4f227c329759c1d721259a97a04853502e383336983f6
+size 180
+gradle.properties filter=lfs diff=lfs merge=lfs -text
+gradlew.bat filter=lfs diff=lfs merge=lfs -text
+local.properties filter=lfs diff=lfs merge=lfs -text
+settings.gradle filter=lfs diff=lfs merge=lfs -text
+build.gradle filter=lfs diff=lfs merge=lfs -text
