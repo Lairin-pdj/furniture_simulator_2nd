@@ -23,9 +23,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CameraTest"
         tools:ignore="GoogleAppIndexingWarning">
-        <activity android:name=".Create2dActivity"
-            android:screenOrientation="portrait">
-        </activity>
+
+        <activity
+            android:name=".DownloadActivity"
+            android:screenOrientation="portrait"></activity>
+
+        <activity
+            android:name=".Create2dActivity"
+            android:screenOrientation="portrait"></activity>
 
         <meta-data
             android:name="com.google.ar.core"

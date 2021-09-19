@@ -100,6 +100,7 @@ import java.io.Writer;
 import java.nio.IntBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -1118,6 +1119,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     public void furnitureMenuClick(View view){
         RecyclerView listView = (RecyclerView)findViewById(R.id.furniture_list);
         Button button = (Button)findViewById(R.id.Button2);
+        Button download = (Button)findViewById(R.id.button_download);
+        Button upload = (Button)findViewById(R.id.button_upload);
         TextView textView = (TextView)findViewById(R.id.furniture_text);
         Resources r = getResources();
         if(!isUp){
@@ -1135,6 +1138,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     button.setY(button.getY() - TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 235, r.getDisplayMetrics()));
                     button.setX(button.getX() - TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, r.getDisplayMetrics()));
                     button.setVisibility(View.VISIBLE);
+                    download.setVisibility(View.VISIBLE);
+                    upload.setVisibility(View.VISIBLE);
                 }
             }, 500);
             isUp = true;
@@ -1146,6 +1151,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             listView.startAnimation(translate_down);
             textView.startAnimation(translate_down);
             button.setVisibility(View.GONE);
+            download.setVisibility(View.GONE);
+            upload.setVisibility(View.GONE);
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
@@ -1199,6 +1206,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         class ViewHolder extends RecyclerView.ViewHolder{
             ImageButton imageButton;
+            Button button;
             TextView textView;
             TextView textViewpreview;
             ImageView imageView;
@@ -1207,6 +1215,45 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 super(itemView);
 
                 textView = (TextView)itemView.findViewById(R.id.textView);
+
+                button = (Button)itemView.findViewById((R.id.delete));
+                button.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                        alert.setTitle("가구 모델 삭제");
+                        alert.setMessage(textView.getText() + " 모델을 삭제하시겠습니까?");
+                        alert.setPositiveButton("제거", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.cancel();
+                                //제거 부분
+                                File path = new File(getFilesDir().getAbsolutePath() + "/models");
+                                File[] files = path.listFiles();
+
+                                // 목록에 있는 파일 중 해당하는 이름의 파일 삭제
+                                for(int i = 0; i < files.length; i++){
+                                    String temp = files[i].getName();
+                                    int idx = temp.lastIndexOf(".");
+                                    if (temp.substring(0, idx).equals(textView.getText())) {
+                                        files[i].delete();
+                                    }
+                                }
+
+                                // 가구 목록의 변화가 있으므로 갱신
+                                setFurnitureList();
+                            }
+                        });
+                        alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.cancel();
+                            }
+                        });
+                        alert.show();
+                    }
+                });
+
 
                 imageButton = (ImageButton)itemView.findViewById(R.id.button);
                 imageButton.setOnClickListener(new View.OnClickListener() {
@@ -1246,8 +1293,26 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
                 }
                 textView.setText(item);
+
+                // 기본 모델은 지울 수 없도록
+                String [] strings = {"andy", "desk", "chair", "lamp"};
+
+                button = (Button)itemView.findViewById((R.id.delete));
+                if (Arrays.asList(strings).contains(textView.getText())) {
+                    button.setVisibility(View.INVISIBLE);
+                }
             }
         }
+    }
+
+    public void downloadClick(View view){
+        furnitureMenuClick(view);
+        Intent intent = new Intent(this, DownloadActivity.class);
+        startActivityForResult(intent, 0);
+    }
+
+    public void uploadClick(View view){
+        Toast.makeText(getApplicationContext(), "Upload 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
     }
 
     public void createMenuClick(View view){
@@ -1277,7 +1342,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public void button3dClick(View view){
         createMenuClick(view);
-        Toast.makeText(getApplicationContext(), "준비중입니다.", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(), "3D 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
     }
 
     public void resetClick(View view){
