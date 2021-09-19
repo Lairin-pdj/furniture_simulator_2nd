@@ -2,7 +2,7 @@
 furniture simulator by android studio(google ar core)
 
 # 프로젝트 및 대략적인 기술 설명
- android studio을 이용하여 제작된 안드로이드 앱의 소스코드 전반입니다.
+ android studio을 이용하여 제작된 안드로이드 앱의 소스코드 전반입니다./n
  카메라와 google AR core을 이용하여 가구를 직접 설치해볼 수 있는 증강현실 앱입니다.
  사물의 렌더링을 opengl을 이용하여 구현하였습니다.
  obj파일과 mtl파일을 렌더링 할 수 있습니다.
