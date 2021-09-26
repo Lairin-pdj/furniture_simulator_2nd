@@ -8,13 +8,31 @@
     android:orientation="vertical"
     tools:context=".DownloadActivity">
 
+    <ImageView
+        android:id="@+id/no_search"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:scaleType="fitCenter"
+        android:visibility="invisible"
+        app:srcCompat="@drawable/no_search" />
+
+    <ImageView
+        android:id="@+id/connect_failed"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:scaleType="fitCenter"
+        android:visibility="invisible"
+        app:srcCompat="@drawable/connect_failed" />
+
     <ImageButton
         android:id="@+id/searchButton"
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_gravity="right|top"
-        android:layout_marginTop="5dp"
-        android:layout_marginRight="5dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginRight="7dp"
         android:background="@android:drawable/ic_menu_search"
         android:onClick="searchbuttonClick" />
 
@@ -23,19 +41,20 @@
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:layout_gravity="left|top"
-        android:layout_marginLeft="5dp"
-        android:layout_marginTop="5dp"
+        android:layout_marginLeft="7dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/backbutton"
         android:onClick="backbuttonClick" />
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/download_list"
-        android:scrollbars="vertical"
-        android:layout_width="wrap_content"
-        android:layout_height="650dp"
-        android:layout_gravity="bottom"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="top"
+        android:layout_marginTop="70dp"
         android:background="@color/white"
-        android:visibility="invisible">
+        android:scrollbars="horizontal"
+        android:visibility="visible">
 
     </android.support.v7.widget.RecyclerView>
 
@@ -44,7 +63,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|center"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="15dp"
         android:textColor="@color/white"
         android:textSize="14pt"
         android:textStyle="normal"

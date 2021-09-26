@@ -1240,6 +1240,15 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                                     }
                                 }
 
+                                // 이미 렌더링 되있는 앵커 제거
+                                for (int i = 0; i < anchors.size(); i++){
+                                    if (anchors.get(i).name.equals(textView.getText())){
+                                       anchors.remove(i);
+                                       i--;
+                                    }
+                                }
+                                selectedAnchor = -1;
+
                                 // 가구 목록의 변화가 있으므로 갱신
                                 setFurnitureList();
                             }
