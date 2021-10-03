@@ -177,7 +177,7 @@
             android:onClick="uploadClick"
             android:visibility="invisible" />
 
-        <android.support.v7.widget.RecyclerView
+        <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/furniture_list"
             android:layout_width="wrap_content"
             android:layout_height="250dp"
@@ -185,7 +185,7 @@
             android:background="@color/white"
             android:visibility="invisible">
 
-        </android.support.v7.widget.RecyclerView>
+        </androidx.recyclerview.widget.RecyclerView>
 
     </FrameLayout>
 

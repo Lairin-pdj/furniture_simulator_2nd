@@ -13,9 +13,11 @@ import android.media.MediaActionSound;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
-import android.support.v4.content.PermissionChecker;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+// androidx 이전
+//import android.support.v7.app.AlertDialog;
+//import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceHolder;

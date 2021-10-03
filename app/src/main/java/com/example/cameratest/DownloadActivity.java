@@ -4,25 +4,44 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.widget.GridLayoutManager;
-import android.support.v7.widget.RecyclerView;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+// androidx 이전
+//import android.support.annotation.NonNull;
+//import android.support.v7.app.AlertDialog;
+//import android.support.v7.app.AppCompatActivity;
+//import android.support.v7.widget.GridLayoutManager;
+//import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.bumptech.glide.Glide;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -33,6 +52,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.ResponseCache;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,21 +70,58 @@ public class DownloadActivity extends AppCompatActivity {
     private String mJsonString;
     private ArrayList<FurnitureData> furniturelist;
 
+    private boolean isSearch;
+    private Animation search_up;
+    private Animation search_down;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        getInstance = this;
 
         setContentView(R.layout.activity_download);
+
+        // 데코레이터
+        recyclerView = findViewById(R.id.download_list);
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        int spacing = 20;
+        boolean includeEdge = true;
+        recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, spacing, includeEdge));
+
+        // 배경 투명도 조절
+        //Drawable alpha = ((RecyclerView)findViewById(R.id.download_list)).getBackground();
+        //alpha.setAlpha(80);
+
+        // search의 애니메이션
+        search_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.search_up);
+        search_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.search_down);
+
+        // search의 엔터키 체크
+        EditText editText = (EditText)findViewById(R.id.search);
+        editText.setOnKeyListener(new View.OnKeyListener(){
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event){
+                if ((event.getAction() == KeyEvent.ACTION_DOWN) && (keyCode == KeyEvent.KEYCODE_ENTER)){
+                    searchbuttonClick(v);
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            }
+        });
+
+        setDownloadList(null, false);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        setDownloadList();
+        isSearch = false;
     }
 
     @Override
@@ -79,13 +136,59 @@ public class DownloadActivity extends AppCompatActivity {
 
     }
 
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev){
+        Rect viewRect = new Rect();
+        EditText editText = (EditText)findViewById(R.id.search);
+        editText.getGlobalVisibleRect(viewRect);
+        if (isSearch && !viewRect.contains((int)ev.getRawX(), (int)ev.getRawY())){
+            editText.setText("");
+            searchbuttonClick(editText);
+        }
+
+        return super.dispatchTouchEvent(ev);
+    }
+
     public void backbuttonClick(View view){
         finish();
-
     }
 
     public void searchbuttonClick(View view){
-        Toast.makeText(getApplicationContext(), "검색 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
+        InputMethodManager inputMethodManager = (InputMethodManager)getInstance.getSystemService(INPUT_METHOD_SERVICE);
+        EditText editText = (EditText)findViewById(R.id.search);
+        ImageButton imageButton = (ImageButton)findViewById(R.id.searchButton);
+        editText.bringToFront();
+        imageButton.bringToFront();
+
+        // 검색창을 여는 경우
+        if (!isSearch) {
+            isSearch = true;
+            editText.setVisibility(View.VISIBLE);
+            editText.startAnimation(search_up);
+            Handler handler = new Handler();
+        }
+        // 검색창을 닫는 경우
+        else{
+            isSearch = false;
+            editText.setVisibility(View.INVISIBLE);
+            editText.startAnimation(search_down);
+
+            // 검색 쿼리
+            if (!editText.getText().toString().equals("")) {
+                setDownloadList(editText.getText(), true);
+            }
+
+            // 키보드 및 포커싱 처리
+            editText.clearFocus();
+            inputMethodManager.hideSoftInputFromWindow(editText.getWindowToken(), 0);
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    editText.setText("");
+                }
+            }, 700);
+        }
     }
 
     private class GetData extends AsyncTask<String, Void, String> {
@@ -117,11 +220,14 @@ public class DownloadActivity extends AppCompatActivity {
                 // 내용물이 없는 경우
                 if (result.equals("")) {
                     search.bringToFront();
+                    adapter.resetItems();
+                    adapter.notifyDataSetChanged();
+                    recyclerView.setAdapter(adapter);
                     search.setVisibility(View.VISIBLE);
                 }
                 // 내용물이 있는 경우
                 else {
-                   search.setVisibility(View.INVISIBLE);
+                    search.setVisibility(View.INVISIBLE);
                     mJsonString = result;
                     showResult();
                 }
@@ -190,35 +296,55 @@ public class DownloadActivity extends AppCompatActivity {
     }
 
     private void showResult(){
-        String TAG_JSON = "webnautes";
+        String TAG_JSON = "furnitures";
         String TAG_ID = "id";
         String TAG_NAME = "name";
-        String TAG_COUNTRY = "country";
+        String TAG_EXTENSION = "extension";
+        String TAG_PREVIEW_LINK = "preview_link";
+        String TAG_FILE_LINK = "file_link";
+        String TAG_TEXTURE_LINK = "texture_link";
+        String TAG_VIEWER_COUNT = "viewer_count";
+        String TAG_DOWNLOAD_COUNT = "download_count";
 
         try {
             JSONObject jsonObject = new JSONObject(mJsonString);
             JSONArray jsonArray = jsonObject.getJSONArray(TAG_JSON);
 
             for(int i=0;i<jsonArray.length();i++){
-
+                // JSON 파싱
                 JSONObject item = jsonArray.getJSONObject(i);
 
                 String id = item.getString(TAG_ID);
                 String name = item.getString(TAG_NAME);
-                String country = item.getString(TAG_COUNTRY);
+                String extension = item.getString(TAG_EXTENSION);
+                String preview_link = item.getString(TAG_PREVIEW_LINK);
+                String file_link = item.getString(TAG_FILE_LINK);
+                String texture_link = item.getString(TAG_TEXTURE_LINK);
+                String viewer_count = item.getString(TAG_VIEWER_COUNT);
+                String download_count = item.getString(TAG_DOWNLOAD_COUNT);
 
+                // 가구 데이터 생성
                 FurnitureData furnitureData = new FurnitureData();
 
                 furnitureData.setMember_id(id);
                 furnitureData.setMember_name(name);
-                furnitureData.setMember_country(country);
+                furnitureData.setMember_extension(extension);
+                furnitureData.setMember_preview_link(preview_link);
+                furnitureData.setMember_file_link(file_link);
+                furnitureData.setMember_texture_link(texture_link);
+                furnitureData.setMember_viewer_count(viewer_count);
+                furnitureData.setMember_download_count(download_count);
 
                 furniturelist.add(furnitureData);
             }
 
+            adapter.resetItems();
+            adapter.notifyDataSetChanged();
+
             for(int i = 0; i < furniturelist.size(); i++){
                 adapter.addItem(furniturelist.get(i));
             }
+
             recyclerView.setAdapter(adapter);
 
         } catch (JSONException e) {
@@ -226,20 +352,21 @@ public class DownloadActivity extends AppCompatActivity {
         }
     }
 
-    public void setDownloadList(){
-        recyclerView = findViewById(R.id.download_list);
-
-        recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        int spacing = 20;
-        boolean includeEdge = true;
-        recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, spacing, includeEdge));
-
+    public void setDownloadList(Editable search_item, Boolean check){
+        // 새로운 배열 준비
         furniturelist = new ArrayList<>();
-
         furniturelist.clear();
 
-        GetData task = new GetData();
-        task.execute("http://" + IP_ADDRESS + "/getjson.php", "");
+        // 검색의 경우
+        if (check){
+            GetData task = new GetData();
+            task.execute("http://" + IP_ADDRESS + "/query.php", "&text=" + search_item.toString());
+        }
+        // 기본 시작 전체 데이터 받아오는 경우
+        else{
+            GetData task = new GetData();
+            task.execute("http://" + IP_ADDRESS + "/getjson.php", "");
+        }
     }
 
     public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
@@ -302,21 +429,28 @@ public class DownloadActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position){
             FurnitureData item = items.get(position);
-            holder.setItem(item);
+            holder.setItem(item, position);
         }
 
         public void addItem(FurnitureData item){
             items.add(item);
         }
 
+        public void resetItems(){
+            items = new ArrayList<>();
+            items.clear();
+        }
+
         class ViewHolder extends RecyclerView.ViewHolder{
             ImageButton imageButton;
+            TextView position_view;
             TextView name;
             TextView view_Count;
             TextView down_Count;
 
             public ViewHolder(@NonNull View itemView){
                 super(itemView);
+                position_view = (TextView)itemView.findViewById(R.id.position);
                 name = (TextView)itemView.findViewById(R.id.name);
 
                 // 다운로드 실시
@@ -330,6 +464,8 @@ public class DownloadActivity extends AppCompatActivity {
                         alert.setPositiveButton("다운", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
+                                int temp = Integer.parseInt(position_view.getText().toString());
+                                Toast.makeText(getApplicationContext(), furniturelist.get(temp).getMember_file_link(), Toast.LENGTH_SHORT).show();
                                 dialog.cancel();
                                 // 다운로드 과정 작성
                                 // 가구 목록의 변화가 있으므로 갱신
@@ -347,17 +483,32 @@ public class DownloadActivity extends AppCompatActivity {
                 });
             }
 
-            public void setItem(FurnitureData item){
+            public void setItem(FurnitureData item, int position){
+                position_view = (TextView)itemView.findViewById(R.id.position);
+                imageButton = (ImageButton)itemView.findViewById(R.id.download);
                 name = (TextView)itemView.findViewById(R.id.name);
                 view_Count = (TextView)itemView.findViewById(R.id.view_Count);
                 down_Count = (TextView)itemView.findViewById(R.id.down_Count);
 
                 // 서버에서 받아온 내용 적재
-                name.setText(item.getMember_name());
-                view_Count.setText(item.getMember_id());
-                down_Count.setText(item.getMember_id());
-
-
+                position_view.setText(String.valueOf(position));
+                if (position >= furniturelist.size()){
+                    Glide.with(itemView)
+                            .load("")
+                            .error(R.drawable.image_load_fail)
+                            .fallback(R.drawable.download_back)
+                            .into(imageButton);
+                }
+                else {
+                    Glide.with(itemView)
+                            .load("http://" + IP_ADDRESS + furniturelist.get(position).getMember_preview_link())
+                            .error(R.drawable.image_load_fail)
+                            .fallback(R.drawable.download_back)
+                            .into(imageButton);
+                }
+                name.setText(item.getMember_name() + "." + item.getMember_extension());
+                view_Count.setText(item.getMember_viewer_count());
+                down_Count.setText(item.getMember_download_count());
             }
         }
     }

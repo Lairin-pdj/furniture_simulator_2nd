@@ -4,9 +4,32 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black"
     android:orientation="vertical"
     tools:context=".DownloadActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:background="@drawable/download_bar_back"
+        android:adjustViewBounds="true"
+        android:scaleType="centerCrop" />
+
+    <EditText
+        android:id="@+id/search"
+        android:layout_width="match_parent"
+        android:layout_height="54dp"
+        android:layout_gravity="top|left"
+        android:layout_marginLeft="65dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginRight="8dp"
+        android:textSize="20dp"
+        android:hint="검색어를 입력해주세요."
+        android:singleLine="true"
+        android:paddingLeft="10dp"
+        android:imeOptions="actionSearch"
+        android:visibility="invisible"
+        android:inputType="textVisiblePassword|textNoSuggestions"
+        android:background="@drawable/search_bar_design"/>
 
     <ImageView
         android:id="@+id/no_search"
@@ -46,27 +69,26 @@
         android:background="@drawable/backbutton"
         android:onClick="backbuttonClick" />
 
-    <android.support.v7.widget.RecyclerView
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/download_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="top"
         android:layout_marginTop="70dp"
-        android:background="@color/white"
+        android:adjustViewBounds="true"
+        android:scaleType="centerCrop"
+        android:background="#DDDDDD"
         android:scrollbars="horizontal"
         android:visibility="visible">
 
-    </android.support.v7.widget.RecyclerView>
+    </androidx.recyclerview.widget.RecyclerView>
 
-    <TextView
-        android:id="@+id/textView2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <ImageView
+        android:id="@+id/download_text_image"
+        android:layout_width="170dp"
+        android:layout_height="50dp"
         android:layout_gravity="top|center"
-        android:layout_marginTop="15dp"
-        android:textColor="@color/white"
-        android:textSize="14pt"
-        android:textStyle="normal"
-        android:text="Download" />
+        android:layout_marginTop="10dp"
+        android:background="@drawable/download_image"/>
 
 </FrameLayout>

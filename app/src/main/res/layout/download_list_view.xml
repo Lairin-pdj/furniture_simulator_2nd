@@ -3,75 +3,91 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="250dp"
-    android:background="@android:color/darker_gray"
+    android:background="@color/black_overlay"
     android:gravity="bottom"
+    android:radius="5dp"
     android:orientation="vertical">
 
-    <ImageButton
-        android:id="@+id/download"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="181dp"
-        android:layout_gravity="top|left"
-        android:adjustViewBounds="true"
-        android:background="@color/black"
-        android:scaleType="fitCenter" />
-
-    <TextView
-        android:id="@+id/name"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="left|bottom"
-        android:layout_marginLeft="10dp"
-        android:layout_marginBottom="35dp"
-        android:text="name"
-        android:textSize="20sp" />
-
-    <LinearLayout
-        android:layout_width="130dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="right|bottom"
-        android:layout_marginRight="5dp"
-        android:layout_marginBottom="3dp"
-        android:orientation="horizontal">
-
-        <ImageView
-            android:id="@+id/imageView3"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            app:srcCompat="@android:drawable/ic_menu_view" />
+        android:layout_height="match_parent"
+        android:layout_marginTop="1dp"
+        android:layout_marginLeft="1dp"
+        android:layout_marginRight="1dp"
+        android:layout_marginBottom="1dp"
+        android:background="@color/white">
 
         <TextView
-            android:id="@+id/view_Count"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="4"
-            android:gravity="right"
-            android:text="24"
-            android:textSize="20sp" />
-
-        <TextView
+            android:id="@+id/name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
-        <ImageView
-            android:id="@+id/imageView4"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            app:srcCompat="@drawable/download_icon" />
+            android:layout_gravity="left|bottom"
+            android:layout_marginLeft="10dp"
+            android:layout_marginBottom="35dp"
+            android:text="name"
+            android:textSize="20sp" />
 
         <TextView
-            android:id="@+id/down_Count"
+            android:id="@+id/position"
             android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="invisible" />
+
+        <ImageButton
+            android:id="@+id/download"
+            android:layout_width="match_parent"
+            android:layout_height="181dp"
+            android:layout_gravity="top|left"
+            android:background="@color/black_overlay"
+            android:scaleType="fitCenter" />
+
+        <LinearLayout
+            android:layout_width="130dp"
             android:layout_height="wrap_content"
-            android:layout_weight="4"
-            android:gravity="right"
-            android:text="12"
-            android:textSize="20sp" />
-    </LinearLayout>
+            android:layout_gravity="right|bottom"
+            android:layout_marginRight="5dp"
+            android:layout_marginBottom="3dp"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:id="@+id/imageView3"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                app:srcCompat="@android:drawable/ic_menu_view" />
+
+            <TextView
+                android:id="@+id/view_Count"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="4"
+                android:gravity="right"
+                android:text="24"
+                android:textSize="20sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/imageView4"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:layout_weight="1"
+                app:srcCompat="@drawable/download_icon" />
+
+            <TextView
+                android:id="@+id/down_Count"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="4"
+                android:gravity="right"
+                android:text="12"
+                android:textSize="20sp" />
+        </LinearLayout>
+    </FrameLayout>
 
 </FrameLayout>

@@ -13,7 +13,9 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Environment;
-import android.support.v7.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
+// androidx 이전
+//import android.support.v7.app.AlertDialog;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
