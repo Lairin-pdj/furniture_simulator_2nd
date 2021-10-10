@@ -1249,6 +1249,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                                     }
                                 }
 
+                                //프리뷰 제거
+                                path = new File(getFilesDir().getAbsolutePath() + "/previews/" + textView.getText() + "preview.png");
+                                path.delete();
+
                                 // 이미 렌더링 되있는 앵커 제거
                                 for (int i = 0; i < anchors.size(); i++){
                                     if (anchors.get(i).name.equals(textView.getText())){

@@ -3,8 +3,11 @@ package com.example.cameratest;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -42,12 +45,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.google.ar.core.Anchor;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -56,6 +63,10 @@ import java.net.ResponseCache;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+
+import de.javagl.obj.Obj;
+import de.javagl.obj.ObjReader;
+import de.javagl.obj.ObjWriter;
 
 
 public class DownloadActivity extends AppCompatActivity {
@@ -69,10 +80,23 @@ public class DownloadActivity extends AppCompatActivity {
     CustomerAdapter adapter = new CustomerAdapter(DownloadActivity.this);
     private String mJsonString;
     private ArrayList<FurnitureData> furniturelist;
+    private Data downloadData = new Data(null, null, null);
 
     private boolean isSearch;
     private Animation search_up;
     private Animation search_down;
+
+    private static class Data{
+        Bitmap preview;
+        Obj obj;
+        Bitmap texture;
+
+        public Data(Bitmap preview, Obj obj, Bitmap texture) {
+            this.preview = preview;
+            this.obj = obj;
+            this.texture = texture;
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -369,6 +393,251 @@ public class DownloadActivity extends AppCompatActivity {
         }
     }
 
+    private class DownData extends AsyncTask<String, Void, String> {
+
+        ProgressDialog progressDialog;
+        String errorString = null;
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            progressDialog = ProgressDialog.show(DownloadActivity.this, "Please Wait", "가구 데이터를 받는 중입니다.", true, false);
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+
+            progressDialog.dismiss();
+            Log.d(TAG, "response - " + result);
+
+            // 결과가 도착한 경우
+            if (result != null){
+
+                // 내용물이 없는 경우
+                if (result.equals("")) {
+                    Log.e(TAG, "DownData : savename error");
+                }
+                // 내용물이 있는 경우
+                else {
+                    createModel(result);
+                }
+            }
+            // 연결에 실패한 경우
+            else{
+                Log.d(TAG, "connect failed");
+            }
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+
+            String URLpreview = params[0];
+            String URLobj = params[1];
+            String URLtexture = params[2];
+            String DATAid = params[3];
+            String name = params[4];
+
+            // preview 파일 수신
+            try {
+                URL url = new URL(URLpreview);
+                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+
+                httpURLConnection.setReadTimeout(5000);
+                httpURLConnection.setConnectTimeout(5000);
+                httpURLConnection.setDoInput(true);
+                httpURLConnection.connect();
+
+                int responseStatusCode = httpURLConnection.getResponseCode();
+                Log.d(TAG, "response code - " + responseStatusCode);
+
+                InputStream inputStream;
+                if(responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    inputStream = httpURLConnection.getInputStream();
+                }
+                else{
+                    inputStream = httpURLConnection.getErrorStream();
+                }
+
+                downloadData.preview = BitmapFactory.decodeStream(inputStream);
+
+            } catch (Exception e) {
+                Log.d(TAG, "DownData : preview : Error ", e);
+                errorString = e.toString();
+
+                return null;
+            }
+
+            // obj 파일 수신
+            try {
+                URL url = new URL(URLobj);
+                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+
+                httpURLConnection.setReadTimeout(5000);
+                httpURLConnection.setConnectTimeout(5000);
+                httpURLConnection.setDoInput(true);
+                httpURLConnection.connect();
+
+                int responseStatusCode = httpURLConnection.getResponseCode();
+                Log.d(TAG, "response code - " + responseStatusCode);
+
+                InputStream inputStream;
+                if(responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    inputStream = httpURLConnection.getInputStream();
+                }
+                else{
+                    inputStream = httpURLConnection.getErrorStream();
+                }
+
+                downloadData.obj = ObjReader.read(inputStream);
+
+            } catch (Exception e) {
+                Log.d(TAG, "DownData : obj : Error ", e);
+                errorString = e.toString();
+
+                return null;
+            }
+
+            // texture 파일 수신
+            try {
+                URL url = new URL(URLtexture);
+                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+
+                httpURLConnection.setReadTimeout(5000);
+                httpURLConnection.setConnectTimeout(5000);
+                httpURLConnection.setDoInput(true);
+                httpURLConnection.connect();
+
+                int responseStatusCode = httpURLConnection.getResponseCode();
+                Log.d(TAG, "response code - " + responseStatusCode);
+
+                InputStream inputStream;
+                if(responseStatusCode == HttpURLConnection.HTTP_OK) {
+                    inputStream = httpURLConnection.getInputStream();
+                }
+                else{
+                    inputStream = httpURLConnection.getErrorStream();
+                }
+
+                downloadData.texture = BitmapFactory.decodeStream(inputStream);
+
+            } catch (Exception e) {
+                Log.d(TAG, "DownData : texture : Error ", e);
+                errorString = e.toString();
+
+                return null;
+            }
+
+            // 다운로드 수 쿼리 진행
+            try {
+                URL url = new URL("http://" + IP_ADDRESS + "/downcount.php");
+                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+
+                httpURLConnection.setReadTimeout(5000);
+                httpURLConnection.setConnectTimeout(5000);
+                httpURLConnection.setRequestMethod("POST");
+                httpURLConnection.connect();
+
+                OutputStream outputStream = httpURLConnection.getOutputStream();
+                outputStream.write(("&id=" + DATAid).getBytes("UTF-8"));
+                outputStream.flush();
+                outputStream.close();
+
+                int responseStatusCode = httpURLConnection.getResponseCode();
+                Log.d(TAG, "response code - " + responseStatusCode);
+
+            } catch (Exception e) {
+                Log.d(TAG, "DownData : counter : Error ", e);
+                errorString = e.toString();
+
+                return null;
+            }
+
+            // 수신 받은 파일 내부저장소로 저장
+            File path;
+            OutputStream outputStream;
+
+            // 이름 중복 방지
+            while (true) {
+                path = new File(getFilesDir().getAbsolutePath() + "/models/" + name + ".obj");
+
+                if (path.exists()) {
+                    int front = name.lastIndexOf("(");
+                    int back = name.lastIndexOf(")");
+
+                    if (front != -1 && back != -1 && front < back){
+                        String number = name.substring(front + 1, back);
+
+                        boolean flag = true;
+                        for (int i = 0; i < number.length(); i++){
+                            char temp = number.charAt(i);
+                            if (!Character.isDigit(temp)) {
+                                name = name + "(1)";
+                                flag = false;
+                                break;
+                            }
+                        }
+                        if (flag && number.length() > 0){
+                            name = name.substring(0, front) + "(" + (Integer.valueOf(number) + 1) + ")";
+                        }
+                        else {
+                            name = name + "(1)";
+                        }
+                    }
+                    else {
+                        name = name + "(1)";
+                    }
+
+                } else {
+                    break;
+                }
+            }
+
+            // 저장 진행
+            try {
+                path = new File(getFilesDir().getAbsolutePath() + "/previews");
+
+                outputStream = new FileOutputStream(path + "/" + name + "preview.png");
+                downloadData.preview.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+
+                path = new File(getFilesDir().getAbsolutePath() + "/models");
+
+                outputStream = new FileOutputStream(path + "/" + name + ".obj");
+                ObjWriter.write(downloadData.obj, outputStream);
+
+                outputStream = new FileOutputStream(path + "/" + name + ".png");
+                downloadData.texture.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+
+                return name;
+            } catch(Exception e){
+                Log.e(TAG, "download error : ", e);
+
+                return null;
+            }
+        }
+    }
+
+    public void createModel(String name){
+        // 다운로드 진행 후 모델 렌더링 추가 및 가구 목록 리로드를 위하여 진행
+        // 모델생성 완료 표시
+        AlertDialog.Builder alert  = new AlertDialog.Builder(this);
+        alert.setTitle("모델 다운");
+        alert.setMessage(name + " 모델 다운 완료!");
+
+        alert.setOnDismissListener(new DialogInterface.OnDismissListener() {
+            @Override
+            public void onDismiss(DialogInterface dialog) {
+                Intent data = new Intent();
+                data.putExtra("modelname", name);
+                setResult(RESULT_OK, data);
+                finish();
+            }
+        });
+
+        alert.show();
+    }
+
     public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
         private int spanCount;
@@ -465,11 +734,14 @@ public class DownloadActivity extends AppCompatActivity {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
                                 int temp = Integer.parseInt(position_view.getText().toString());
-                                Toast.makeText(getApplicationContext(), furniturelist.get(temp).getMember_file_link(), Toast.LENGTH_SHORT).show();
+                                DownData task = new DownData();
+                                String address = "http://" + IP_ADDRESS;
+                                task.execute(address + furniturelist.get(temp).getMember_preview_link(),
+                                        address + furniturelist.get(temp).getMember_file_link(),
+                                        address + furniturelist.get(temp).getMember_texture_link(),
+                                        furniturelist.get(temp).getMember_id(),
+                                        furniturelist.get(temp).getMember_name());
                                 dialog.cancel();
-                                // 다운로드 과정 작성
-                                // 가구 목록의 변화가 있으므로 갱신
-                                //setFurnitureList();
                             }
                         });
                         alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {

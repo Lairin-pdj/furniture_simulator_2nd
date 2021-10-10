@@ -306,7 +306,7 @@ public class Create2dActivity extends AppCompatActivity {
         alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                modelName= name.getText().toString();
+                modelName = name.getText().toString();
                 //모델생성부분으로 전달
                 createModel();
                 dialog.cancel();
