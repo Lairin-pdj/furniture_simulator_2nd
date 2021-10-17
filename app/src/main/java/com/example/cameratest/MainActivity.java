@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -51,8 +52,8 @@ import androidx.recyclerview.widget.RecyclerView;
 //import android.support.v7.app.AppCompatActivity;
 //import android.support.v7.widget.LinearLayoutManager;
 //import android.support.v7.widget.RecyclerView;
+import android.os.Parcelable;
 import android.util.Log;
-import android.util.MonthDisplayHelper;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -66,6 +67,7 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Switch;
@@ -96,16 +98,14 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 //sceneform code
 //import com.google.ar.sceneform.ux.ArFragment;
 
-import org.w3c.dom.Node;
+import org.w3c.dom.Text;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.nio.IntBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -125,9 +125,7 @@ import de.javagl.obj.MtlReader;
 import de.javagl.obj.MtlWriter;
 import de.javagl.obj.Obj;
 import de.javagl.obj.ObjReader;
-import de.javagl.obj.ObjUtils;
 import de.javagl.obj.ObjWriter;
-import de.javagl.obj.ReadableObj;
 
 public class MainActivity extends AppCompatActivity implements GLSurfaceView.Renderer, ImageReader.OnImageAvailableListener {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -205,8 +203,26 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public static MainActivity getInstance;
     private RecyclerView recyclerView = null;
+    private RecyclerView subRecyclerView = null;
+
+    private static class subMenuData{
+        public int picture;
+        public String name;
+        public String text;
+
+        public subMenuData(int picture, String name, String text) {
+            this.picture = picture;
+            this.name = name;
+            this.text = text;
+        }
+    }
+
+    private Parcelable recyclerViewState;
     private boolean isUp = false;
+    private boolean isSubmenu = false;
     private boolean isCreateUp = false;
+    private boolean isDel = false;
+    private boolean isUpload = false;
     private Animation translate_up;
     private Animation translate_down;
     private Animation button2d_up;
@@ -224,10 +240,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         };
 
         //권한 승인 여부 체크
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             for(String permission : permissions){
                 int result = PermissionChecker.checkSelfPermission(this, permission);
-                if(result == PermissionChecker.PERMISSION_GRANTED){
+                if (result == PermissionChecker.PERMISSION_GRANTED){
                     //성공시
                 }
                 else{
@@ -342,6 +358,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         setFurniturePreview();
         setFurnitureList();
+        setSubmenu();
     }
 
     @Override
@@ -482,14 +499,14 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         //초기 plane 탐지 전 이미지 보여주기
-        if(firstPlanecheck == false && hasTrackingPlane()){
+        if(!firstPlanecheck && hasTrackingPlane()){
             ImageView imageView;
             imageView = findViewById(R.id.imageView);
             imageView.setVisibility(View.INVISIBLE);
             firstPlanecheck = true;
         }
 
-        if(isNewModel == true){
+        if(isNewModel){
             isNewModel = false;
             if(newModelName != null){
                 try {
@@ -1098,8 +1115,28 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         imageViewPreview = (ImageView) findViewById(R.id.imageView_preview);
     }
 
+    public void setSubmenu(){
+        subRecyclerView = findViewById(R.id.submenu_View);
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
+        subRecyclerView.setLayoutManager(layoutManager);
+
+        SubAdapter subAdapter = new SubAdapter(getApplicationContext());
+
+        subAdapter.addItem(new subMenuData(R.drawable.title2d, "2D create", "2d 가구모델을 만들 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.title3d, "3D create", "3d 가구모델을 만들 수 있습니다."));
+
+        subRecyclerView.setAdapter(subAdapter);
+    }
+
     public void setFurnitureList(){
         recyclerView = findViewById(R.id.furniture_list);
+
+        boolean flag = false;
+        if (recyclerView.getLayoutManager() != null) {
+            recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
+            flag = true;
+        }
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         recyclerView.setLayoutManager(layoutManager);
@@ -1123,13 +1160,15 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         recyclerView.setAdapter(adapter);
+        if (flag) {
+            recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+        }
     }
 
     public void furnitureMenuClick(View view){
         RecyclerView listView = (RecyclerView)findViewById(R.id.furniture_list);
-        Button button = (Button)findViewById(R.id.Button2);
-        Button download = (Button)findViewById(R.id.button_download);
-        Button upload = (Button)findViewById(R.id.button_upload);
+        Button button = (Button)findViewById(R.id.button_list);
+        Button sub = (Button)findViewById(R.id.button_sub_menu);
         TextView textView = (TextView)findViewById(R.id.furniture_text);
         Resources r = getResources();
         if(!isUp){
@@ -1147,8 +1186,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     button.setY(button.getY() - TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 235, r.getDisplayMetrics()));
                     button.setX(button.getX() - TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, r.getDisplayMetrics()));
                     button.setVisibility(View.VISIBLE);
-                    download.setVisibility(View.VISIBLE);
-                    upload.setVisibility(View.VISIBLE);
+                    sub.setVisibility(View.VISIBLE);
                 }
             }, 500);
             isUp = true;
@@ -1160,8 +1198,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             listView.startAnimation(translate_down);
             textView.startAnimation(translate_down);
             button.setVisibility(View.GONE);
-            download.setVisibility(View.GONE);
-            upload.setVisibility(View.GONE);
+            sub.setVisibility(View.GONE);
+            if (isSubmenu){
+                subMenu(null);
+            }
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
@@ -1169,6 +1209,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     button.setY(button.getY() + TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 235, r.getDisplayMetrics()));
                     button.setX(button.getX() + TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, r.getDisplayMetrics()));
                     button.setVisibility(View.VISIBLE);
+                    if (isDel){
+                        furDelete(null);
+                    }
+                    if (isUpload){
+                        uploadClick(null);
+                    }
                 }
             }, 500);
             isUp = false;
@@ -1215,7 +1261,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         class ViewHolder extends RecyclerView.ViewHolder{
             ImageButton imageButton;
-            Button button;
+            Button delButton;
+            Button uploadButton;
             TextView textView;
             TextView textViewpreview;
             ImageView imageView;
@@ -1225,8 +1272,14 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
                 textView = (TextView)itemView.findViewById(R.id.textView);
 
-                button = (Button)itemView.findViewById((R.id.delete));
-                button.setOnClickListener(new View.OnClickListener() {
+                delButton = (Button)itemView.findViewById((R.id.delete));
+                if (isDel){
+                    delButton.setVisibility(View.VISIBLE);
+                }
+                else{
+                    delButton.setVisibility(View.INVISIBLE);
+                }
+                delButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
@@ -1262,6 +1315,15 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                                 }
                                 selectedAnchor = -1;
 
+                                //선택된 가구일 경우 제거
+                                if (togled != null && togled.equals(textView.getText())){
+                                    togled = null;
+                                    TextView textViewpreview = getInstance.textViewPreview;
+                                    ImageView imageView = getInstance.imageViewPreview;
+                                    textViewpreview.setVisibility(View.INVISIBLE);
+                                    imageView.setVisibility(View.INVISIBLE);
+                                }
+
                                 // 가구 목록의 변화가 있으므로 갱신
                                 setFurnitureList();
                             }
@@ -1276,22 +1338,39 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     }
                 });
 
+                uploadButton = (Button)itemView.findViewById((R.id.upload_check));
+                if (isUpload){
+                    uploadButton.setVisibility(View.VISIBLE);
+                }
+                else{
+                    uploadButton.setVisibility(View.INVISIBLE);
+                }
+
 
                 imageButton = (ImageButton)itemView.findViewById(R.id.button);
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Toast.makeText(MainActivity.this, textView.getText(), Toast.LENGTH_SHORT).show();
-                        togled = textView.getText().toString();
-                        textViewpreview = getInstance.textViewPreview;
-                        textViewpreview.setText(textView.getText());
-                        textViewpreview.setVisibility(View.VISIBLE);
-                        imageView = getInstance.imageViewPreview;
-                        BitmapDrawable bd = (BitmapDrawable)imageButton.getDrawable();
-                        Bitmap temp = bd.getBitmap();
-                        imageView.setImageBitmap(temp);
-                        imageView.setVisibility(View.VISIBLE);
-                        furnitureMenuClick(null);
+                        if (!isDel) {
+                            Toast.makeText(MainActivity.this, textView.getText(), Toast.LENGTH_SHORT).show();
+                            togled = textView.getText().toString();
+                            textViewpreview = getInstance.textViewPreview;
+                            textViewpreview.setText(textView.getText());
+                            textViewpreview.setVisibility(View.VISIBLE);
+                            imageView = getInstance.imageViewPreview;
+                            BitmapDrawable bd = (BitmapDrawable) imageButton.getDrawable();
+                            Bitmap temp = bd.getBitmap();
+                            imageView.setImageBitmap(temp);
+                            imageView.setVisibility(View.VISIBLE);
+                            furnitureMenuClick(null);
+                        }
+                        else {
+                            String [] strings = {"andy", "desk", "chair", "lamp"};
+
+                            if (!Arrays.asList(strings).contains(textView.getText())) {
+                                delButton.callOnClick();
+                            }
+                        }
                     }
                 });
             }
@@ -1319,10 +1398,65 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 // 기본 모델은 지울 수 없도록
                 String [] strings = {"andy", "desk", "chair", "lamp"};
 
-                button = (Button)itemView.findViewById((R.id.delete));
+                delButton = (Button)itemView.findViewById((R.id.delete));
                 if (Arrays.asList(strings).contains(textView.getText())) {
-                    button.setVisibility(View.INVISIBLE);
+                    delButton.setVisibility(View.INVISIBLE);
                 }
+            }
+        }
+    }
+
+    public class SubAdapter extends RecyclerView.Adapter<SubAdapter.ViewHolder>{
+        ArrayList<subMenuData> items = new ArrayList<>();
+        Context context;
+
+        public SubAdapter(Context context){
+            this.context = context;
+        }
+
+        @Override
+        public int getItemCount(){
+            return items.size();
+        }
+
+        @NonNull
+        @Override
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType){
+            LayoutInflater vi = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            View itemView = vi.inflate(R.layout.submenu_view, parent, false);
+
+            return new ViewHolder(itemView);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position){
+            subMenuData item = items.get(position);
+            holder.setItem(item);
+        }
+
+        public void addItem(subMenuData item){
+            items.add(item);
+        }
+
+        class ViewHolder extends RecyclerView.ViewHolder{
+            FrameLayout line;
+            ImageView picture;
+            TextView name;
+            TextView text;
+
+
+            public ViewHolder(@NonNull View itemView){
+                super(itemView);
+
+                picture = (ImageView)itemView.findViewById(R.id.menu_image);
+                name = (TextView)itemView.findViewById(R.id.menu_name);
+                text = (TextView)itemView.findViewById(R.id.menu_text);
+            }
+
+            public void setItem(subMenuData item){
+                picture.setImageResource(item.picture);
+                name.setText(item.name);
+                text.setText(item.text);
             }
         }
     }
@@ -1334,7 +1468,53 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void uploadClick(View view){
-        Toast.makeText(getApplicationContext(), "Upload 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
+        //Button up = (Button)findViewById(R.id.button_fur_del);
+
+        if (isUpload){
+            isUpload = false;
+            //up.setBackgroundResource(R.drawable.del_noncheck);
+        }
+        else{
+            isUpload = true;
+            //up.setBackgroundResource(R.drawable.del_check);
+        }
+
+        recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
+        CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
+        adapter.notifyDataSetChanged();
+        recyclerView.setAdapter(adapter);
+        recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+    }
+
+    public void furDelete(View view){
+        Button del = (Button)findViewById(R.id.button_fur_del);
+
+        if (isDel){
+            isDel = false;
+            del.setBackgroundResource(R.drawable.del_noncheck);
+        }
+        else{
+            isDel = true;
+            del.setBackgroundResource(R.drawable.del_check);
+        }
+
+        recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
+        CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
+        adapter.notifyDataSetChanged();
+        recyclerView.setAdapter(adapter);
+        recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+    }
+
+    public void subMenu(View view){
+        FrameLayout submenu = (FrameLayout)findViewById(R.id.furniture_list_submenu);
+        if (isSubmenu){
+            isSubmenu = false;
+            submenu.setVisibility(View.INVISIBLE);
+        }
+        else {
+            isSubmenu = true;
+            submenu.setVisibility(View.VISIBLE);
+        }
     }
 
     public void createMenuClick(View view){

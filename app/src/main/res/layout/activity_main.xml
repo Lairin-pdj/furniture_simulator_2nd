@@ -135,7 +135,7 @@
             android:visibility="invisible" />
 
         <Button
-            android:id="@+id/Button2"
+            android:id="@+id/button_list"
             android:layout_width="70dp"
             android:layout_height="70dp"
             android:layout_gravity="start|bottom"
@@ -153,29 +153,64 @@
             android:layout_marginTop="20dp"
             android:layout_marginRight="20dp"
             android:background="@android:drawable/ic_delete"
-            android:onClick="resetClick"/>
+            android:onClick="resetClick" />
+
+        <FrameLayout
+            android:id="@+id/furniture_list_submenu"
+            android:layout_width="400dp"
+            android:layout_height="300dp"
+            android:layout_gravity="right|bottom"
+            android:layout_marginBottom="260dp"
+            android:background="@color/white"
+            android:visibility="invisible">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/submenu_View"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+            <Button
+                android:id="@+id/button_upload"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_gravity="bottom|right"
+                android:layout_marginBottom="20dp"
+                android:layout_marginRight="160dp"
+                android:background="@drawable/upload_icon"
+                android:onClick="uploadClick"/>
+
+            <Button
+                android:id="@+id/button_download"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_gravity="bottom|right"
+                android:layout_marginBottom="20dp"
+                android:layout_marginRight="90dp"
+                android:background="@drawable/download_icon"
+                android:onClick="downloadClick"/>
+
+            <Button
+                android:id="@+id/button_fur_del"
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:layout_gravity="bottom|right"
+                android:layout_marginBottom="20dp"
+                android:layout_marginRight="20dp"
+                android:background="@drawable/del_noncheck"
+                android:onClick="furDelete"/>
+
+        </FrameLayout>
 
         <Button
-            android:id="@+id/button_download"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:id="@+id/button_sub_menu"
+            android:layout_width="35dp"
+            android:layout_height="27dp"
             android:layout_gravity="bottom|right"
-            android:layout_marginRight="20dp"
-            android:layout_marginBottom="260dp"
-            android:background="@drawable/download_icon"
-            android:onClick="downloadClick"
-            android:visibility="invisible" />
-
-        <Button
-            android:id="@+id/button_upload"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_gravity="bottom|right"
-            android:layout_marginRight="90dp"
-            android:layout_marginBottom="260dp"
-            android:background="@drawable/upload_icon"
-            android:onClick="uploadClick"
-            android:visibility="invisible" />
+            android:layout_marginBottom="218dp"
+            android:layout_marginRight="5dp"
+            android:background="@drawable/submenu_button"
+            android:onClick="subMenu"
+            android:visibility="invisible"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/furniture_list"
