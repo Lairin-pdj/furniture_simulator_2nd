@@ -1444,7 +1444,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             TextView name;
             TextView text;
 
-
             public ViewHolder(@NonNull View itemView){
                 super(itemView);
 
