@@ -88,6 +88,8 @@ public class Create2dActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 풀 스크린 적용
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -121,11 +123,11 @@ public class Create2dActivity extends AppCompatActivity {
     }
 
     public void captureClick(View view){
-        //끊김 해결필요
+        //소리 재생
         MediaActionSound sound = new MediaActionSound();
         sound.play(MediaActionSound.SHUTTER_CLICK);
 
-        //원랜 콜백 활성화를 위해 하였는데 성능상 항시 체크해도 문제가 없는거같아서 추후 테스트 예정
+        // 콜백함수의 진행을 기다린 뒤 저장 시도
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -188,11 +190,15 @@ public class Create2dActivity extends AppCompatActivity {
     }
 
     public void openCVobjectCheck(){
+        // 이미지에서 사물인식
+
+        // 이미지 형식 변환
         Mat rgb = new Mat();
         Utils.bitmapToMat(bm, rgb);
         Mat imageMat = new Mat();
         Utils.bitmapToMat(bm, imageMat);
 
+        // 회색조로 변경
         Mat grayImage = new Mat();  //grey color matrix
         Imgproc.cvtColor(rgb, grayImage, Imgproc.COLOR_RGB2GRAY);
 
@@ -277,6 +283,7 @@ public class Create2dActivity extends AppCompatActivity {
     }
 
     public boolean collisionCheck(Rect r1, Rect r2){
+        // 충돌 체크
         if(r1.x < r2.x + r2.width && r1.y < r2.y + r2.height && r1.x + r1.width > r2.x && r1.y + r1.height > r2.y){
             return true;
         }
@@ -286,6 +293,7 @@ public class Create2dActivity extends AppCompatActivity {
     }
 
     public Rect mergeRect(Rect r1, Rect r2){
+        // 사각형 합치기
         int x = Math.min(r1.x, r2.x);
         int y = Math.min(r1.y, r2.y);
         int right = Math.max(r1.x + r1.width, r2.x + r2.width);
@@ -381,6 +389,7 @@ public class Create2dActivity extends AppCompatActivity {
     }
 
     public void checkXClick(View view){
+        // 다시 촬영시도
         FrameLayout frameLayout = (FrameLayout)findViewById(R.id.objectpreview);
         frameLayout.setVisibility(View.INVISIBLE);
 
@@ -389,6 +398,7 @@ public class Create2dActivity extends AppCompatActivity {
     }
 
     private void setInit(){
+        // 카메라 세팅
         getInstance = this;
         mCamera = Camera.open();
 

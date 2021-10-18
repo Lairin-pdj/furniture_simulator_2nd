@@ -70,22 +70,14 @@ import de.javagl.obj.ObjWriter;
 
 
 public class DownloadActivity extends AppCompatActivity {
+    // ip주소
+    // 캡슐화 필요
+    private final static String IP_ADDRESS = "13.125.254.183";
+    private final static String TAG = "php";
 
-    public static DownloadActivity getInstance;
-    public RecyclerView recyclerView;
-
-    private static String IP_ADDRESS = "13.125.254.183";
-    private static String TAG = "php";
-
-    CustomerAdapter adapter = new CustomerAdapter(DownloadActivity.this);
+    // 저장을 위한 변수들
     private String mJsonString;
     private ArrayList<FurnitureData> furniturelist;
-    private Data downloadData = new Data(null, null, null);
-
-    private boolean isSearch;
-    private Animation search_up;
-    private Animation search_down;
-
     private static class Data{
         Bitmap preview;
         Obj obj;
@@ -97,10 +89,23 @@ public class DownloadActivity extends AppCompatActivity {
             this.texture = texture;
         }
     }
+    private Data downloadData = new Data(null, null, null);
+
+    // UI용 변수들
+    public static DownloadActivity getInstance;
+    public RecyclerView recyclerView;
+    CustomerAdapter adapter = new CustomerAdapter(DownloadActivity.this);
+    private boolean isSearch;
+
+    // 애니메이션
+    private Animation search_up;
+    private Animation search_down;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 풀스크린
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -114,10 +119,6 @@ public class DownloadActivity extends AppCompatActivity {
         int spacing = 20;
         boolean includeEdge = true;
         recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, spacing, includeEdge));
-
-        // 배경 투명도 조절
-        //Drawable alpha = ((RecyclerView)findViewById(R.id.download_list)).getBackground();
-        //alpha.setAlpha(80);
 
         // search의 애니메이션
         search_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.search_up);
@@ -138,6 +139,7 @@ public class DownloadActivity extends AppCompatActivity {
             }
         });
 
+        // 다운로드 목록 세팅
         setDownloadList(null, false);
     }
 
@@ -151,17 +153,18 @@ public class DownloadActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
     }
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev){
+        // 검색창 외 다른 터치 감시
+        // 현재 작동 오류가 발생하는 기종이 존재
+        // 수정 필요
         Rect viewRect = new Rect();
         EditText editText = (EditText)findViewById(R.id.search);
         editText.getGlobalVisibleRect(viewRect);
@@ -216,7 +219,6 @@ public class DownloadActivity extends AppCompatActivity {
     }
 
     private class GetData extends AsyncTask<String, Void, String> {
-
         ProgressDialog progressDialog;
         String errorString = null;
 
@@ -271,6 +273,7 @@ public class DownloadActivity extends AppCompatActivity {
             String postParameters = params[1];
 
             try {
+                // 주어진 주소로 연결 시도
                 URL url = new URL(serverURL);
                 HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
 
@@ -280,6 +283,7 @@ public class DownloadActivity extends AppCompatActivity {
                 httpURLConnection.setDoInput(true);
                 httpURLConnection.connect();
 
+                // 문자열이 주어진 경우 post로 전송
                 OutputStream outputStream = httpURLConnection.getOutputStream();
                 outputStream.write(postParameters.getBytes("UTF-8"));
                 outputStream.flush();
@@ -296,6 +300,7 @@ public class DownloadActivity extends AppCompatActivity {
                     inputStream = httpURLConnection.getErrorStream();
                 }
 
+                // 통신 정보를 저장
                 InputStreamReader inputStreamReader = new InputStreamReader(inputStream, "UTF-8");
                 BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 
@@ -639,7 +644,8 @@ public class DownloadActivity extends AppCompatActivity {
     }
 
     public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
-
+        // 다운로드 목록 데코레이터
+        // 그리드레이아웃에 적용 가능한 형태
         private int spanCount;
         private int spacing;
         private boolean includeEdge;

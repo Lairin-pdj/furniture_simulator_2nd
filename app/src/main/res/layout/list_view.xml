@@ -2,17 +2,35 @@
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="187dp"
-    android:layout_height="250dp"
+    android:layout_width="190dp"
+    android:layout_height="match_parent"
     android:orientation="vertical"
-    android:gravity="bottom">
+    android:gravity="bottom"
+    android:background="@color/white">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center"
+        android:layout_marginBottom="2dp"
+        android:text="name"
+        android:textSize="20sp" />
+
+    <ImageButton
+        android:id="@+id/button"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="30dp"
+        android:background="@color/black_overlay"
+        android:scaleType="centerCrop" />
 
     <Button
         android:id="@+id/delete"
         android:layout_width="40dp"
         android:layout_height="40dp"
         android:layout_gravity="top|right"
-        android:layout_marginTop="38dp"
+        android:layout_marginTop="3dp"
         android:layout_marginRight="3dp"
         android:adjustViewBounds="true"
         android:background="@android:drawable/ic_delete"
@@ -24,28 +42,9 @@
         android:layout_height="40dp"
         android:layout_gravity="top|left"
         android:layout_marginLeft="3dp"
-        android:layout_marginTop="38dp"
+        android:layout_marginTop="3dp"
         android:adjustViewBounds="true"
         android:background="@android:drawable/checkbox_off_background"
         android:scaleType="fitCenter" />
 
-    <ImageButton
-        android:id="@+id/button"
-        android:layout_width="185dp"
-        android:layout_height="match_parent"
-        android:layout_gravity="center"
-        android:layout_marginTop="35dp"
-        android:layout_marginBottom="30dp"
-        android:scaleType="fitCenter"
-        android:adjustViewBounds="true"
-        android:background="@color/black" />
-
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center"
-        android:layout_marginBottom="2dp"
-        android:text="name"
-        android:textSize="20sp" />
 </FrameLayout>

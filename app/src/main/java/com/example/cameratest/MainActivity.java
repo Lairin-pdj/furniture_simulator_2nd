@@ -4,15 +4,16 @@ import android.Manifest;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -29,6 +30,7 @@ import android.opengl.GLES20;
 import android.opengl.GLException;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.ConditionVariable;
@@ -41,6 +43,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 // androidx 이전
@@ -52,9 +55,9 @@ import androidx.recyclerview.widget.RecyclerView;
 //import android.support.v7.app.AppCompatActivity;
 //import android.support.v7.widget.LinearLayoutManager;
 //import android.support.v7.widget.RecyclerView;
+import android.os.Message;
 import android.os.Parcelable;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -98,8 +101,6 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 //sceneform code
 //import com.google.ar.sceneform.ux.ArFragment;
 
-import org.w3c.dom.Text;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -115,6 +116,8 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -130,29 +133,39 @@ import de.javagl.obj.ObjWriter;
 public class MainActivity extends AppCompatActivity implements GLSurfaceView.Renderer, ImageReader.OnImageAvailableListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    // surfaceview를 위한 변수들
     private Session mSession;
     private static Session sharedSession;
-    private boolean mUserRequestInstall = true;
+    private boolean mUserRequestInstall = true;  // 설치 여부 체크
     private static GLSurfaceView surfaceView;
     private boolean surfaceCreated;
+
+    // 선택된 가구 보여주기용 view
     private static TextView textViewPreview;
     private static ImageView imageViewPreview;
 
+    // 카메라 프리뷰 및 캡쳐를 위한 변수들
     private CameraManager cameraManager;
     private List<CaptureRequest.Key<?>> keysThatCanCauseCaptureDelaysWhenModified;
     private CameraDevice cameraDevice;
     private static SharedCamera sharedCamera;
     private String cameraId;
     private CameraCaptureSession captureSession;
-    private boolean arcoreActive;
-    private boolean isGlAttached;
     private boolean captureSessionChangesPossible = true;
     private CaptureRequest.Builder previewCaptureRequestBuilder;
+    private final ConditionVariable safeToExitApp = new ConditionVariable();
+
+    // 생성되거나 다운한 모델의 저장을 위한 변수들
     private boolean saveCheck = false;
     private boolean saveSucess;
     private boolean isNewModel = false;
     private String newModelName = null;
 
+    // ar코어 및 렌더링 관련 변수들
+    private boolean arcoreActive;
+    private static final Short AUTOMATOR_DEFAULT = 0;
+    private static final String AUTOMATOR_KEY = "automator";
+    private final AtomicBoolean automatorRun = new AtomicBoolean(false);
     private final AtomicBoolean shouldUpdateSurfaceTexture = new AtomicBoolean(false);
     private TapHelper tapHelper;
     private DisplayRotationHelper displayRotationHelper;
@@ -160,22 +173,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private HandlerThread backgroundThread;
     private final TrackingStateHelper trackingStateHelper = new TrackingStateHelper(this);
     private final BackgroundRenderer backgroundRenderer = new BackgroundRenderer();
-    private final Map<String, ObjectRenderer> virtualObject = new HashMap<>();
-    private final Map<String, ComplexObjectRenderer> complexvirtualObject = new HashMap<>();
+    private final Map<String, ObjectRenderer> virtualObject = new HashMap<>(); // obj모델 저장용 해시맵
+    private final Map<String, ComplexObjectRenderer> complexvirtualObject = new HashMap<>(); // mtl모델 저장용 해시맵
     private final PlaneRenderer planeRenderer = new PlaneRenderer();
     private final PointCloudRenderer pointCloudRenderer = new PointCloudRenderer();
     private final ObjectRenderer virtualObjectSelect = new ObjectRenderer();
-    private boolean isPlaneChanged = false;
+    private boolean isPlaneChanged = false; // plane 체크용 변수들
     private boolean isPlaneshow = true;
     private boolean firstPlanecheck = false;
 
-    private static final Short AUTOMATOR_DEFAULT = 0;
-    private static final String AUTOMATOR_KEY = "automator";
-    private final AtomicBoolean automatorRun = new AtomicBoolean(false);
-
+    // anchor용 변수들
     private final float[] anchorMatrix = new float[16];
     private static final float[] DEFAULT_COLOR = new float[] {0f, 0f, 0f, 0f};
-
     private static class ColoredAnchor{
         public Anchor anchor;
         public float[] color;
@@ -193,18 +202,15 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             this.selected = false;
         }
     }
-    private int selectedAnchor = -1;
-
+    private int selectedAnchor = -1; // 선택된 anchor의 순서값
     private final ArrayList<ColoredAnchor> anchors = new ArrayList<>();
     private String togled = null;
     private ScaleGestureDetector scaleGestureDetector;
 
-    private final ConditionVariable safeToExitApp = new ConditionVariable();
-
+    // UI구현을 위한 변수들
     public static MainActivity getInstance;
     private RecyclerView recyclerView = null;
     private RecyclerView subRecyclerView = null;
-
     private static class subMenuData{
         public int picture;
         public String name;
@@ -216,35 +222,34 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             this.text = text;
         }
     }
-
     private Parcelable recyclerViewState;
     private boolean isUp = false;
     private boolean isSubmenu = false;
-    private boolean isCreateUp = false;
+    private boolean isDeco = false;
     private boolean isDel = false;
     private boolean isUpload = false;
+
+    // 애니메이션 변수들
     private Animation translate_up;
     private Animation translate_down;
-    private Animation button2d_up;
-    private Animation button2d_down;
-    private Animation button3d_up;
-    private Animation button3d_down;
+    private Animation sub_up;
+    private Animation sub_down;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
-        //멀티 권한 설정
+        // 멀티 권한 설정
         String[] permissions = new String[]{
                 Manifest.permission.CAMERA,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_EXTERNAL_STORAGE
         };
 
-        //권한 승인 여부 체크
+        // 권한 승인 여부 체크
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
             for(String permission : permissions){
                 int result = PermissionChecker.checkSelfPermission(this, permission);
                 if (result == PermissionChecker.PERMISSION_GRANTED){
-                    //성공시
+                    // 성공시
                 }
                 else{
                     doRequestPermissions();
@@ -255,24 +260,25 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         super.onCreate(savedInstanceState);
         getInstance = this;
+
+        // 풀스크린 적용
         supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
+        // 애니메이션 변수 적용
         translate_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_up);
         translate_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_down);
-        button2d_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.button2d_up);
-        button2d_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.button2d_down);
-        button3d_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.button3d_up);
-        button3d_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.button3d_down);
+        sub_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.sub_up);
+        sub_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.sub_down);
 
-        //내장 모델 내부저장소에 저장
+        // 내장 모델 내부저장소에 저장
         saveInternalModels();
 
-        //프리뷰 내부저장소에 저장
+        // 프리뷰 내부저장소에 저장
         saveInternalPreviews();
 
-        //glsurfaceview 설정 코드
+        // glsurfaceview 설정 코드
         setContentView(R.layout.activity_main);
 
         Bundle extraBundle = getIntent().getExtras();
@@ -293,18 +299,19 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         tapHelper = new TapHelper(this);
         surfaceView.setOnTouchListener(tapHelper);
 
-        //plane스위치 표시
+        // plane스위치 표시
         Switch planeSwitch = findViewById(R.id.switch1);
         planeSwitch.bringToFront();
         planeSwitch.setOnCheckedChangeListener(new planeChangedListener());
 
-        //초기튜토리얼 이미지 표시
+        // 초기튜토리얼 이미지 표시
         ImageView imageView = findViewById(R.id.imageView);
         imageView.bringToFront();
 
-        //핀치줌 체크용
+        // 핀치줌 체크용
         scaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
 
+        // AR 시작
         resumeARCore();
     }
 
@@ -312,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     protected void onResume() {
         super.onResume();
 
-        //arcore 다운 체크
+        // arcore 다운 체크
         try{
             if(mSession == null){
                 switch (ArCoreApk.getInstance().requestInstall(this, mUserRequestInstall)) {
@@ -326,11 +333,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
             }
         }catch (UnavailableUserDeclinedInstallationException e){
-            //에러시
+            // 에러시
         }catch (Exception e){
 
         }
 
+        // 권한 체크
         String[] permissions = new String[]{
                 Manifest.permission.CAMERA,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -345,34 +353,43 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 check++;
             }
         }
-        //모든 권한 획득시 화면 출력
+
+        //모든 권한 획득시 화면 출력 진행
         waitUntilCameraCaptureSessionIsActive();
         startBackgroundThread();
         surfaceView.onResume();
 
+        // 뷰에 카메라프리뷰를 띄우기위한 작업
         if (surfaceCreated) {
             openCamera();
         }
 
         displayRotationHelper.onResume();
 
+        // 선택된 가구 보여주는 뷰 초기화
         setFurniturePreview();
+
+        // 가구목록 셋팅
         setFurnitureList();
-        setSubmenu();
+
+        // 배터리 표시
+        setBatteryTimer();
     }
 
     @Override
     protected void onPause() {
-        shouldUpdateSurfaceTexture.set(false);
-        surfaceView.onPause();
-        waitUntilCameraCaptureSessionIsActive();
+        // 실행 중이던 내용들 모두 정지
+        surfaceView.onPause(); // view
+        waitUntilCameraCaptureSessionIsActive(); // 카메라 관련 내용들
+        mSession.close();
         displayRotationHelper.onPause();
-        pauseARCore();
         closeCamera();
         stopBackgroundThread();
+        shouldUpdateSurfaceTexture.set(false); // ar 관련 내용들
+        pauseARCore();
 
+        // UI의 통일을 위해
         isUp = false;
-        mSession.close();
 
         super.onPause();
     }
@@ -392,12 +409,14 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     private void startBackgroundThread() {
+        // 쓰레드를 이용해 백그라운드에서 카메라 프리뷰 진행
         backgroundThread = new HandlerThread("sharedCameraBackground");
         backgroundThread.start();
         backgroundHandler = new Handler(backgroundThread.getLooper());
     }
 
     private void stopBackgroundThread() {
+        // 카메라 프리뷰 정지
         if (backgroundThread != null) {
             backgroundThread.quitSafely();
             try {
@@ -424,9 +443,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             planeRenderer.createOnGlThread(this, "models/trigrid.png");
             pointCloudRenderer.createOnGlThread(this);
 
+            // 내부 파일에서 모델링 가능한 목록 파싱
             File path = new File(getFilesDir().getAbsolutePath() + "/models");
             File[] files = path.listFiles();
-
             List<String> filenames = new ArrayList<>();
             for(int i = 0; i < files.length; i++){
                 String temp = files[i].getName();
@@ -436,12 +455,15 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
             }
 
+            // 파싱된 결과를 기준으로 렌더링 생성
             for(int i = 0; i < filenames.size(); i++){
                 File check = new File(getFilesDir().getAbsolutePath() + "/models/" + filenames.get(i) + ".mtl");
+                // mtl 파일인 경우
                 if(check.exists()){
                     complexvirtualObject.put(filenames.get(i), new ComplexObjectRenderer());
                     complexvirtualObject.get(filenames.get(i)).createOnGlThread(this, "models/" + filenames.get(i) + ".obj", "models/" + filenames.get(i) + ".png");
                 }
+                // obj 파일인 경우
                 else {
                     virtualObject.put(filenames.get(i), new ObjectRenderer());
                     virtualObject.get(filenames.get(i)).createOnGlThread(this, "models/" + filenames.get(i) + ".obj", "models/" + filenames.get(i) + ".png");
@@ -449,10 +471,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
             }
 
+            // 선택표시용 렌더러 생성
             virtualObjectSelect.createOnGlThread(this, "models/selected.obj", "models/selected.png");
             virtualObjectSelect.setBlendMode(ObjectRenderer.BlendMode.AlphaBlending);
             virtualObjectSelect.setMaterialProperties(1.0f, 0.0f, 0.0f, 1.0f);
 
+            // 카메라 진행
             openCamera();
         } catch (IOException e) {
             Log.e(TAG, "Failed to read an asset file", e);
@@ -461,6 +485,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
+        // 화면의 이동이 발생함을 캐치
         GLES20.glViewport(0, 0, width, height);
         displayRotationHelper.onSurfaceChanged(width, height);
     }
@@ -475,8 +500,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             return;
         }
 
+        // 이동 감지
         displayRotationHelper.updateSessionIfNeeded(sharedSession);
 
+        // ar 렌더링 진행
         try {
             onDrawFrameARCore();
         } catch (Throwable t) {
@@ -506,6 +533,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             firstPlanecheck = true;
         }
 
+        // 새로운 모델이 있으면 렌더러에 추가
         if(isNewModel){
             isNewModel = false;
             if(newModelName != null){
@@ -566,16 +594,13 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         Frame frame = sharedSession.update();
         Camera camera = frame.getCamera();
 
-        // ARCore attached the surface to GL context using the texture ID we provided
-        // in createCameraPreviewSession() via sharedSession.setCameraTextureName(…).
-        isGlAttached = true;
-
         // Handle screen tap.
         handleTap(frame, camera);
 
         // If frame is ready, render camera preview image to the GL surface.
         backgroundRenderer.draw(frame);
 
+        // plane 생성을 위한 tracking
         trackingStateHelper.updateKeepScreenOnFlag(camera.getTrackingState());
 
         // If not tracking, don't draw 3D objects.
@@ -605,9 +630,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         // Visualize planes.
+        //플레인 제거시 수정 필요 예상
         planeRenderer.drawPlanes(
                 sharedSession.getAllTrackables(Plane.class), camera.getDisplayOrientedPose(), projmtx);
-        //플레인 제거시 수정 필요
 
         // Visualize anchors created by touch.
         for (ColoredAnchor coloredAnchor : anchors) {
@@ -624,16 +649,19 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             Matrix.setRotateM(temp, 0, coloredAnchor.angle, 0.0f, 1.0f, 0.0f);
             Matrix.multiplyMM(finish, 0, anchorMatrix, 0, temp, 0);
 
+            // 해시맵에서 렌더러를 찾아 렌더링 진행
+            // mtl의 경우
             if(complexvirtualObject.containsKey(coloredAnchor.name)){
                 complexvirtualObject.get(coloredAnchor.name).updateModelMatrix(finish, coloredAnchor.scale);
                 complexvirtualObject.get(coloredAnchor.name).draw(viewmtx, projmtx, colorCorrectionRgba);
             }
+            // obj의 경우
             else {
-                // Update and draw the model and its shadow.
                 virtualObject.get(coloredAnchor.name).updateModelMatrix(finish, coloredAnchor.scale);
                 virtualObject.get(coloredAnchor.name).draw(viewmtx, projmtx, colorCorrectionRgba, coloredAnchor.color);
             }
 
+            // 선택된 가구는 추가 마크 렌더링
             if(coloredAnchor.selected == true) {
                 virtualObjectSelect.updateModelMatrix(finish, coloredAnchor.scale);
                 virtualObjectSelect.draw(viewmtx, projmtx, colorCorrectionRgba, DEFAULT_COLOR);
@@ -642,6 +670,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     private boolean isARCoreSupportedAndUpToDate(){
+        // arcore 설치 여부 및 설치 진행
         ArCoreApk.Availability availability = ArCoreApk.getInstance().checkAvailability(this);
         switch (availability){
             case SUPPORTED_INSTALLED:
@@ -804,6 +833,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     private boolean hasTrackingPlane() {
+        // plane이 생성 되었는지 감지
         for (Plane plane : sharedSession.getAllTrackables(Plane.class)) {
             if (plane.getTrackingState() == TrackingState.TRACKING) {
                 return true;
@@ -970,11 +1000,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void saveInternalModels(){
+        // 첫 기본 모델 초기화 과정
         File path = new File(getFilesDir().getAbsolutePath() + "/models");
         if(!path.exists()){
             path.mkdirs();
         }
-        //최적화 필요
         try {
             AssetManager am = getResources().getAssets();
             InputStream inputStream = null;
@@ -1071,6 +1101,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void saveInternalPreviews(){
+        // 첫 기본 모델 초기화 과정
         File path = new File(getFilesDir().getAbsolutePath() + "/previews");
         if(!path.exists()){
             path.mkdirs();
@@ -1116,22 +1147,33 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void setSubmenu(){
+        // 서브메뉴의 생성
         subRecyclerView = findViewById(R.id.submenu_View);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         subRecyclerView.setLayoutManager(layoutManager);
 
+        // 구분자 적용
+        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(getApplicationContext(), DividerItemDecoration.VERTICAL);
+        subRecyclerView.addItemDecoration(dividerItemDecoration);
+
         SubAdapter subAdapter = new SubAdapter(getApplicationContext());
 
-        subAdapter.addItem(new subMenuData(R.drawable.title2d, "2D create", "2d 가구모델을 만들 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.title3d, "3D create", "3d 가구모델을 만들 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.title2d, "2D Create", "2D 가구 모델을 만들 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.title3d, "3D Create", "3D 가구 모델을 만들 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.download_icon, "Download", "서버에서 다양한 가구 모델을 받을 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.upload_icon, "Upload", "가구 모델을 서버로 올릴 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.del_icon, "Model Delete", "필요 없는 가구를 삭제할 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.setting_icon, "Settings", "여러가지 설정을 조절할 수 있습니다."));
 
         subRecyclerView.setAdapter(subAdapter);
     }
 
     public void setFurnitureList(){
+        // 가구목록 생성
         recyclerView = findViewById(R.id.furniture_list);
 
+        // 위치의 유지를 위해
         boolean flag = false;
         if (recyclerView.getLayoutManager() != null) {
             recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
@@ -1141,11 +1183,17 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
         recyclerView.setLayoutManager(layoutManager);
 
+        // 데코레이터 적용
+        if (!isDeco) {
+            recyclerView.addItemDecoration(new MainActivity.SpacingItemDecoration(8));
+            isDeco = true;
+        }
+
         CustomerAdapter adapter = new CustomerAdapter(getApplicationContext());
 
+        // 내부 저장소 파싱을 통해 모델 체크
         File path = new File(getFilesDir().getAbsolutePath() + "/models");
         File[] files = path.listFiles();
-
         List<String> filenames = new ArrayList<>();
         for(int i = 0; i < files.length; i++){
             String temp = files[i].getName();
@@ -1155,76 +1203,72 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             }
         }
 
+        // 체크된 모델 가구목록에 삽입
         for(int i = 0; i < filenames.size(); i++){
             adapter.addItem(new String(filenames.get(i)));
         }
 
+        // 가구 목록 적용
         recyclerView.setAdapter(adapter);
         if (flag) {
             recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
     }
 
-    public void furnitureMenuClick(View view){
-        RecyclerView listView = (RecyclerView)findViewById(R.id.furniture_list);
-        Button button = (Button)findViewById(R.id.button_list);
-        Button sub = (Button)findViewById(R.id.button_sub_menu);
-        TextView textView = (TextView)findViewById(R.id.furniture_text);
-        Resources r = getResources();
-        if(!isUp){
-            //열기
-            listView.setVisibility(View.VISIBLE);
-            textView.setVisibility(View.VISIBLE);
-            textView.bringToFront();
-            listView.startAnimation(translate_up);
-            textView.startAnimation(translate_up);
-            button.setVisibility(View.GONE);
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    button.setY(button.getY() - TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 235, r.getDisplayMetrics()));
-                    button.setX(button.getX() - TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, r.getDisplayMetrics()));
-                    button.setVisibility(View.VISIBLE);
-                    sub.setVisibility(View.VISIBLE);
-                }
-            }, 500);
-            isUp = true;
-        }
-        else{
-            //닫기
-            listView.setVisibility(View.GONE);
-            textView.setVisibility(View.GONE);
-            listView.startAnimation(translate_down);
-            textView.startAnimation(translate_down);
-            button.setVisibility(View.GONE);
-            sub.setVisibility(View.GONE);
-            if (isSubmenu){
-                subMenu(null);
-            }
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    button.setY(button.getY() + TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 235, r.getDisplayMetrics()));
-                    button.setX(button.getX() + TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 10, r.getDisplayMetrics()));
-                    button.setVisibility(View.VISIBLE);
-                    if (isDel){
-                        furDelete(null);
-                    }
-                    if (isUpload){
-                        uploadClick(null);
-                    }
-                }
-            }, 500);
-            isUp = false;
-        }
+    public void setBatteryTimer(){
+        // 순서 재조정
+        FrameLayout frameLayout = findViewById(R.id.layout_battery);
+        TextView textView = findViewById(R.id.textView_battery);
+        ImageView imageView = findViewById(R.id.imageView_battery);
+        frameLayout.bringToFront();
+        imageView.bringToFront();
+        textView.bringToFront();
 
-        //선택 상태 유지를 막기위해 해제
-        if (selectedAnchor >= 0) {
-            anchors.get(selectedAnchor).selected = false;
-            selectedAnchor = -1;
-        }
+        // 필터 설정
+        IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+
+        // 스레드 에러를 방지하기 위해 핸들러로 대신 처리
+        Handler handler = new Handler(){
+            public void handleMessage(Message msg){
+                Intent batteryStatus = registerReceiver(null, ifilter);
+                int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                int status = batteryStatus.getIntExtra(BatteryManager.EXTRA_STATUS, -1);
+
+                float batteryPct = level / (float)scale;
+
+                String value = String.valueOf((int)(batteryPct * 100));
+                int check = (int)(batteryPct * 100);
+
+                // 상태 체크
+                if (status == BatteryManager.BATTERY_STATUS_CHARGING){
+                    imageView.setImageResource(R.drawable.battery_charge);
+                    textView.setTextColor(Color.rgb(0x0, 0x99, 0x0));
+                }
+                else if (check >= 50){
+                    imageView.setImageResource(R.drawable.battery_high);
+                    textView.setTextColor(Color.rgb(0x0, 0x99, 0x0));
+                }
+                else if (check < 50){
+                    imageView.setImageResource(R.drawable.battery_low);
+                    textView.setTextColor(Color.rgb(0x99, 0x0, 0x0));
+                }
+
+                textView.setText(value + "%");
+            }
+        };
+
+        // 주기적 갱신
+        TimerTask battery = new TimerTask() {
+            @Override
+            public void run() {
+                Log.v(TAG,"timer run");
+                Message msg = handler.obtainMessage();
+                handler.sendMessage(msg);
+            }
+        };
+        Timer timer = new Timer();
+        timer.schedule(battery, 0, 3000);
     }
 
     public class CustomerAdapter extends RecyclerView.Adapter<CustomerAdapter.ViewHolder>{
@@ -1272,6 +1316,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
                 textView = (TextView)itemView.findViewById(R.id.textView);
 
+                // 삭제버튼
                 delButton = (Button)itemView.findViewById((R.id.delete));
                 if (isDel){
                     delButton.setVisibility(View.VISIBLE);
@@ -1338,6 +1383,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     }
                 });
 
+                // 업로드 버튼
                 uploadButton = (Button)itemView.findViewById((R.id.upload_check));
                 if (isUpload){
                     uploadButton.setVisibility(View.VISIBLE);
@@ -1345,13 +1391,36 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 else{
                     uploadButton.setVisibility(View.INVISIBLE);
                 }
+                uploadButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                        alert.setTitle("가구 모델 업로드");
+                        alert.setMessage(textView.getText() + " 모델을 업로드하시겠습니까?");
+                        alert.setPositiveButton("업로드", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.cancel();
+                                // 업로드 코드 예정
+                            }
+                        });
+                        alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                dialog.cancel();
+                            }
+                        });
+                        alert.show();
+                    }
+                });
 
-
+                // 가구이미지
                 imageButton = (ImageButton)itemView.findViewById(R.id.button);
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (!isDel) {
+                        // 모드가 적용되지 않은 경우 가구 선택
+                        if (!isDel && !isUpload) {
                             Toast.makeText(MainActivity.this, textView.getText(), Toast.LENGTH_SHORT).show();
                             togled = textView.getText().toString();
                             textViewpreview = getInstance.textViewPreview;
@@ -1364,7 +1433,13 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                             imageView.setVisibility(View.VISIBLE);
                             furnitureMenuClick(null);
                         }
+                        // 업로드 모드일 경우
+                        else if (isUpload){
+                            uploadButton.callOnClick();
+                        }
+                        // 삭제 모드일 경우
                         else {
+                            // 기본 가구는 삭제하지 못하도록
                             String [] strings = {"andy", "desk", "chair", "lamp"};
 
                             if (!Arrays.asList(strings).contains(textView.getText())) {
@@ -1376,11 +1451,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             }
 
             public void setItem(String item){
+                // 이름에 맞춰 파일 탐색 및 적용
                 File path = new File(getFilesDir().getAbsolutePath() + "/previews");
                 File[] files = path.listFiles();
                 InputStream is = null;
                 Bitmap bitmap;
-
                 try {
                     File check = new File(path + "/" + item + "preview.png");
                     if(check.exists()){
@@ -1403,6 +1478,25 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     delButton.setVisibility(View.INVISIBLE);
                 }
             }
+        }
+    }
+
+    public class SpacingItemDecoration extends RecyclerView.ItemDecoration {
+        // 주어진 숫자 만큼 공간을 띄워주는 데코레이터
+        private final int spacing;
+
+        public SpacingItemDecoration(int spacing) {
+            this.spacing = spacing;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view); // item position
+
+            if (position == 0) {
+                outRect.left = spacing;
+            }
+            outRect.right =  spacing;
         }
     }
 
@@ -1438,6 +1532,26 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             items.add(item);
         }
 
+        @Override
+        public void onViewAttachedToWindow(@NonNull ViewHolder holder) {
+            // marquee의 시작 시점
+            super.onViewAttachedToWindow(holder);
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    holder.text.setSelected(true);
+                }
+            }, 3000);
+        }
+
+        @Override
+        public void onViewDetachedFromWindow(@NonNull ViewHolder holder) {
+            // marquee의 종료 시점
+            super.onViewDetachedFromWindow(holder);
+            holder.text.setSelected(false);
+        }
+
         class ViewHolder extends RecyclerView.ViewHolder{
             FrameLayout line;
             ImageView picture;
@@ -1447,6 +1561,34 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             public ViewHolder(@NonNull View itemView){
                 super(itemView);
 
+                // 메뉴의 선택
+                line = (FrameLayout)itemView.findViewById(R.id.submenu_area);
+                line.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        String temp = name.getText().toString();
+                        switch (temp){
+                            case "2D Create":
+                                button2dClick(null);
+                                break;
+                            case "3D Create":
+                                button3dClick(null);
+                                break;
+                            case "Download":
+                                downloadClick(null);
+                                break;
+                            case "Upload":
+                                uploadClick(null);
+                                break;
+                            case "Model Delete":
+                                furDeleteClick(null);
+                                break;
+                            case "Settings":
+                                Toast.makeText(getApplicationContext(), "Settings", Toast.LENGTH_SHORT).show();
+                                break;
+                        }
+                    }
+                });
                 picture = (ImageView)itemView.findViewById(R.id.menu_image);
                 name = (TextView)itemView.findViewById(R.id.menu_name);
                 text = (TextView)itemView.findViewById(R.id.menu_text);
@@ -1461,23 +1603,41 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void downloadClick(View view){
-        furnitureMenuClick(view);
+        // 다운로드 액티비티로 이동
+        furnitureMenuClick(null);
         Intent intent = new Intent(this, DownloadActivity.class);
-        startActivityForResult(intent, 0);
+
+        // 지연시간으로 애니메이션 효과 지속
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startActivityForResult(intent, 0);
+            }
+        }, 500);
     }
 
     public void uploadClick(View view){
-        //Button up = (Button)findViewById(R.id.button_fur_del);
+        ImageView icon = findViewById(R.id.mode_icon);
+        TextView text = findViewById(R.id.mode_text);
 
         if (isUpload){
+            icon.setVisibility(View.GONE);
+            text.setVisibility(View.GONE);
             isUpload = false;
-            //up.setBackgroundResource(R.drawable.del_noncheck);
         }
         else{
+            if (isDel){
+               furDeleteClick(null);
+            }
             isUpload = true;
-            //up.setBackgroundResource(R.drawable.del_check);
+            subMenuClick(null);
+            icon.setImageResource(R.drawable.upload_icon);
+            icon.setVisibility(View.VISIBLE);
+            text.setVisibility(View.VISIBLE);
         }
 
+        // 뷰 갱신 및 위치 고정
         recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
         CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
@@ -1485,18 +1645,27 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
     }
 
-    public void furDelete(View view){
-        Button del = (Button)findViewById(R.id.button_fur_del);
+    public void furDeleteClick(View view){
+        ImageView icon = findViewById(R.id.mode_icon);
+        TextView text = findViewById(R.id.mode_text);
 
         if (isDel){
+            icon.setVisibility(View.GONE);
+            text.setVisibility(View.GONE);
             isDel = false;
-            del.setBackgroundResource(R.drawable.del_noncheck);
         }
         else{
+            if (isUpload){
+                uploadClick(null);
+            }
             isDel = true;
-            del.setBackgroundResource(R.drawable.del_check);
+            subMenuClick(null);
+            icon.setImageResource(R.drawable.del_icon);
+            icon.setVisibility(View.VISIBLE);
+            text.setVisibility(View.VISIBLE);
         }
 
+        // 뷰 갱신 및 위치 고정
         recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
         CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
@@ -1504,45 +1673,81 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
     }
 
-    public void subMenu(View view){
+    public void subMenuClick(View view){
+        // 서브 메뉴 클릭
         FrameLayout submenu = (FrameLayout)findViewById(R.id.furniture_list_submenu);
         if (isSubmenu){
             isSubmenu = false;
-            submenu.setVisibility(View.INVISIBLE);
+            submenu.setVisibility(View.GONE);
+            submenu.startAnimation(sub_down);
         }
         else {
             isSubmenu = true;
+            setSubmenu();
             submenu.setVisibility(View.VISIBLE);
+            submenu.startAnimation(sub_up);
         }
     }
 
-    public void createMenuClick(View view){
-        Button bt2d = (Button)findViewById(R.id.button2d);
-        Button bt3d = (Button)findViewById(R.id.button3d);
-        if(!isCreateUp){
-            isCreateUp = true;
-            bt2d.setVisibility(View.VISIBLE);
-            bt3d.setVisibility(View.VISIBLE);
-            bt2d.startAnimation(button2d_up);
-            bt3d.startAnimation(button3d_up);
+    public void furnitureMenuClick(View view){
+        FrameLayout listView = (FrameLayout)findViewById(R.id.furniture_list_frame);
+        listView.bringToFront();
+
+        if(!isUp){
+            //열기
+            listView.setVisibility(View.VISIBLE);
+            listView.startAnimation(translate_up);
+            isUp = true;
         }
         else{
-            isCreateUp = false;
-            bt2d.setVisibility(View.INVISIBLE);
-            bt3d.setVisibility(View.INVISIBLE);
-            bt2d.startAnimation(button2d_down);
-            bt3d.startAnimation(button3d_down);
+            //닫기
+            listView.setVisibility(View.GONE);
+            listView.startAnimation(translate_down);
+            if (isSubmenu){
+                subMenuClick(null);
+            }
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (isDel){
+                        furDeleteClick(null);
+                    }
+                    if (isUpload){
+                        uploadClick(null);
+                    }
+                }
+            }, 500);
+            isUp = false;
         }
+
+        //선택 상태 유지를 막기위해 해제
+        if (selectedAnchor >= 0) {
+            anchors.get(selectedAnchor).selected = false;
+            selectedAnchor = -1;
+        }
+    }
+
+    public void furListExitClick(View view){
+        furnitureMenuClick(null);
     }
 
     public void button2dClick(View view){
-        createMenuClick(view);
+        // 2d 액티비티로 이동
+        furnitureMenuClick(null);
         Intent intent = new Intent(this, Create2dActivity.class);
-        startActivityForResult(intent, 0);
+
+        // 지연시간으로 애니메이션 효과 지속
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startActivityForResult(intent, 0);
+            }
+        }, 500);
     }
 
     public void button3dClick(View view){
-        createMenuClick(view);
         Toast.makeText(getApplicationContext(), "3D 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
     }
 
@@ -1573,6 +1778,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     class planeChangedListener implements CompoundButton.OnCheckedChangeListener{
+        // 플레인 설정이 바뀐 것을 감지
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             if(isChecked){
@@ -1589,12 +1795,16 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void captureClick(View view) throws InterruptedException {
+        // 화면 캡쳐 기능
+
+        // 소리 출력
         MediaActionSound sound = new MediaActionSound();
         sound.play(MediaActionSound.SHUTTER_CLICK);
 
         saveCheck = true;
         saveSucess = false;
 
+        // 콜백함수의 진행을 기다린 뒤 결과 출력
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -1644,6 +1854,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void doRequestPermissions() {
+        // 권한 목록
         String[] permissions = new String[]{
                 Manifest.permission.CAMERA,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -1844,29 +2055,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     previewCaptureRequestBuilder.build(), cameraCaptureCallback, backgroundHandler);
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to set repeating request", e);
-        }
-    }
-
-    private <T> boolean checkIfKeyCanCauseDelay(CaptureRequest.Key<T> key) {
-        if (Build.VERSION.SDK_INT >= 28) {
-            // On Android P and later, return true if key is difficult to apply per-frame.
-            return keysThatCanCauseCaptureDelaysWhenModified.contains(key);
-        } else {
-            // On earlier Android versions, log a warning since there is no API to determine whether
-            // the key is difficult to apply per-frame. Certain keys such as CONTROL_AE_TARGET_FPS_RANGE
-            // are known to cause a noticeable delay on certain devices.
-            // If avoiding unexpected capture delays when switching between non-AR and AR modes is
-            // important, verify the runtime behavior on each pre-Android P device on which the app will
-            // be distributed. Note that this device-specific runtime behavior may change when the
-            // device's operating system is updated.
-            Log.w(
-                    TAG,
-                    "Changing "
-                            + key
-                            + " may cause a noticeable capture delay. Please verify actual runtime behavior on"
-                            + " specific pre-Android P devices that this app will be distributed on.");
-            // Allow the change since we're unable to determine whether it can cause unexpected delays.
-            return false;
         }
     }
 }
