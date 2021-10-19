@@ -28,11 +28,11 @@
 
         <activity
             android:name=".DownloadActivity"
-            android:screenOrientation="portrait"></activity>
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".Create2dActivity"
-            android:screenOrientation="portrait"></activity>
+            android:screenOrientation="portrait" />
 
         <meta-data
             android:name="com.google.ar.core"

@@ -720,7 +720,6 @@ public class DownloadActivity extends AppCompatActivity {
             ImageButton imageButton;
             TextView position_view;
             TextView name;
-            TextView view_Count;
             TextView down_Count;
 
             public ViewHolder(@NonNull View itemView){
@@ -765,7 +764,6 @@ public class DownloadActivity extends AppCompatActivity {
                 position_view = (TextView)itemView.findViewById(R.id.position);
                 imageButton = (ImageButton)itemView.findViewById(R.id.download);
                 name = (TextView)itemView.findViewById(R.id.name);
-                view_Count = (TextView)itemView.findViewById(R.id.view_Count);
                 down_Count = (TextView)itemView.findViewById(R.id.down_Count);
 
                 // 서버에서 받아온 내용 적재
@@ -785,7 +783,6 @@ public class DownloadActivity extends AppCompatActivity {
                             .into(imageButton);
                 }
                 name.setText(item.getMember_name() + "." + item.getMember_extension());
-                view_Count.setText(item.getMember_viewer_count());
                 down_Count.setText(item.getMember_download_count());
             }
         }

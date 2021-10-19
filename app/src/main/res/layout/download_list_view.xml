@@ -21,9 +21,11 @@
             android:id="@+id/name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="left|bottom"
-            android:layout_marginLeft="10dp"
+            android:layout_gravity="start|bottom"
+            android:layout_marginStart="10dp"
             android:layout_marginBottom="35dp"
+            android:singleLine="true"
+            android:ellipsize="end"
             android:text="name"
             android:textSize="20sp" />
 
@@ -37,41 +39,17 @@
             android:id="@+id/download"
             android:layout_width="match_parent"
             android:layout_height="181dp"
-            android:layout_gravity="top|left"
+            android:layout_gravity="top|start"
             android:background="@color/black_overlay"
             android:scaleType="fitCenter" />
 
         <LinearLayout
-            android:layout_width="130dp"
+            android:layout_width="60dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="right|bottom"
-            android:layout_marginRight="5dp"
+            android:layout_gravity="end|bottom"
+            android:layout_marginEnd="8dp"
             android:layout_marginBottom="3dp"
             android:orientation="horizontal">
-
-            <ImageView
-                android:id="@+id/imageView3"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:layout_gravity="center"
-                android:layout_weight="1"
-                android:visibility="invisible"
-                app:srcCompat="@android:drawable/ic_menu_view" />
-
-            <TextView
-                android:id="@+id/view_Count"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="4"
-                android:gravity="right"
-                android:visibility="invisible"
-                android:text="24"
-                android:textSize="20sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1" />
 
             <ImageView
                 android:id="@+id/imageView4"
@@ -86,7 +64,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="4"
-                android:gravity="right"
+                android:gravity="center_vertical|end"
                 android:text="12"
                 android:textSize="20sp" />
         </LinearLayout>

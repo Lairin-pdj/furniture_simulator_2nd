@@ -16,9 +16,9 @@
             android:id="@+id/switch1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginRight="80dp"
-            android:layout_marginTop="25dp"
-            android:layout_gravity="top|right"
+            android:layout_marginEnd="50dp"
+            android:layout_marginTop="10dp"
+            android:layout_gravity="top|end"
             android:textOff="off"
             android:textOn="on"
             android:text="Plane"
@@ -27,41 +27,40 @@
 
         <Button
             android:id="@+id/button_reset"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_gravity="top|right"
-            android:layout_marginTop="20dp"
-            android:layout_marginRight="20dp"
-            android:background="@android:drawable/ic_delete"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="20dp"
+            android:background="@android:drawable/ic_menu_close_clear_cancel"
             android:onClick="resetClick" />
 
         <Button
             android:id="@+id/button_list"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_gravity="start|bottom"
             android:layout_marginStart="20dp"
-            android:layout_marginLeft="20dp"
             android:layout_marginBottom="20dp"
             android:background="@android:drawable/ic_menu_add"
             android:onClick="furnitureMenuClick" />
 
         <Button
-            android:id="@+id/Button1"
-            android:layout_width="70dp"
-            android:layout_height="70dp"
+            android:id="@+id/button_capture"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
             android:layout_gravity="center_horizontal|bottom"
             android:layout_marginBottom="20dp"
-            android:background="@android:drawable/presence_invisible"
+            android:background="@android:drawable/ic_menu_compass"
             android:onClick="captureClick" />
 
         <FrameLayout
             android:id="@+id/layout_battery"
             android:layout_width="37dp"
             android:layout_height="18dp"
-            android:layout_gravity="bottom|right"
-            android:layout_marginRight="10dp"
-            android:layout_marginBottom="10dp"
+            android:layout_gravity="top|end"
+            android:layout_marginEnd="10dp"
+            android:layout_marginTop="10dp"
             android:visibility="visible">
 
             <TextView
@@ -69,7 +68,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center"
-                android:layout_marginRight="2dp"
+                android:layout_marginEnd="2dp"
                 android:text="100%"
                 android:textColor="#4CAF50"
                 android:textSize="10dp"
@@ -100,31 +99,48 @@
 
     </FrameLayout>
 
-    <LinearLayout
-        android:layout_width="100dp"
-        android:layout_height="120dp"
-        android:orientation="vertical">
+    <FrameLayout
+        android:id="@+id/select_fur_preview"
+        android:layout_width="102dp"
+        android:layout_height="122dp"
+        android:layout_gravity="top|start"
+        android:orientation="vertical"
+        android:background="#77000000"
+        android:visibility="invisible">
 
-        <ImageView
-            android:id="@+id/imageView_preview"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:adjustViewBounds="true"
-            android:background="@color/black"
-            android:gravity="top"
-            android:scaleType="fitCenter"
-            android:visibility="invisible"
-            app:srcCompat="@drawable/furniture_vector_icons_111434" />
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="2dp"
+            android:layout_marginEnd="2dp"
+            android:background="@color/white">
 
-        <TextView
-            android:id="@+id/textView_preview"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:text="TextView"
-            android:visibility="invisible" />
+            <ImageView
+                android:id="@+id/imageView_preview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="20dp"
+                android:adjustViewBounds="true"
+                android:gravity="top"
+                android:scaleType="centerCrop"
+                app:srcCompat="@drawable/furniture_vector_icons_111434" />
 
-    </LinearLayout>
+            <TextView
+                android:id="@+id/textView_preview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginTop="101dp"
+                android:paddingStart="5dp"
+                android:paddingEnd="4dp"
+                android:ellipsize="middle"
+                android:singleLine="true"
+                android:text="TextView"
+                android:textSize="12dp" />
+
+        </FrameLayout>
+
+    </FrameLayout>
 
     <FrameLayout
         android:id="@+id/frame_layout"
@@ -135,19 +151,20 @@
             android:id="@+id/furniture_list_submenu"
             android:layout_width="270dp"
             android:layout_height="450dp"
-            android:layout_gravity="right|bottom"
+            android:layout_gravity="end|bottom"
             android:layout_marginBottom="270dp"
-            android:background="@color/white"
-            android:visibility="gone">
+            android:background="#77000000"
+            android:visibility="invisible">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left|top"
-                android:layout_marginLeft="10dp"
+                android:layout_gravity="start|top"
+                android:layout_marginStart="10dp"
                 android:layout_marginTop="2dp"
                 android:text="메뉴"
                 android:textSize="30dp"
+                android:textColor="@color/white"
                 android:visibility="visible" />
 
             <androidx.recyclerview.widget.RecyclerView
@@ -179,8 +196,8 @@
                 android:id="@+id/button_sub_menu"
                 android:layout_width="30dp"
                 android:layout_height="26dp"
-                android:layout_gravity="top|right"
-                android:layout_marginRight="10dp"
+                android:layout_gravity="top|end"
+                android:layout_marginEnd="10dp"
                 android:layout_marginTop="10dp"
                 android:background="@drawable/submenu_button"
                 android:onClick="subMenuClick" />
@@ -189,18 +206,19 @@
                 android:id="@+id/mode_icon"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
-                android:layout_gravity="top|right"
-                android:layout_marginRight="50dp"
+                android:layout_gravity="top|end"
+                android:layout_marginEnd="50dp"
                 android:layout_marginTop="8dp"
-                android:visibility="invisible"/>
+                android:visibility="invisible"
+                android:onClick="modeIconClick"/>
 
             <TextView
                 android:id="@+id/mode_text"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right|top"
+                android:layout_gravity="end|top"
                 android:layout_marginTop="12dp"
-                android:layout_marginRight="80dp"
+                android:layout_marginEnd="80dp"
                 android:text="mode =>"
                 android:textColor="@color/black"
                 android:textSize="15dp"
@@ -220,8 +238,8 @@
                 android:id="@+id/button_furlist_exit"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:layout_gravity="top|left"
-                android:layout_marginLeft="10dp"
+                android:layout_gravity="top|start"
+                android:layout_marginStart="10dp"
                 android:layout_marginTop="3dp"
                 android:background="@android:drawable/ic_menu_more"
                 android:onClick="furListExitClick" />
