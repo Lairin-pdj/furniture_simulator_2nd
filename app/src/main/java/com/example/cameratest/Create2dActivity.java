@@ -304,7 +304,7 @@ public class Create2dActivity extends AppCompatActivity {
 
     public void checkOClick(View view){
         //이름 입력받기
-        AlertDialog.Builder alert  = new AlertDialog.Builder(this);
+        AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
         alert.setTitle("모델 이름 설정");
         alert.setMessage("모델 이름을 정해주세요.");
 
@@ -370,7 +370,7 @@ public class Create2dActivity extends AppCompatActivity {
         }
 
         //모델생성 완료 표시
-        AlertDialog.Builder alert  = new AlertDialog.Builder(this);
+        AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
         alert.setTitle("모델 생성");
         alert.setMessage("모델 생성 완료!");
 

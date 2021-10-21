@@ -22,16 +22,22 @@
         android:requestLegacyExternalStorage="true"
         android:roundIcon="@mipmap/ic_main_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CameraTest"
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
 
         <activity
             android:name=".DownloadActivity"
+            android:theme="@style/AppTheme"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".SettingActivity"
+            android:theme="@style/AppTheme"
             android:screenOrientation="portrait" />
 
         <activity
             android:name=".Create2dActivity"
+            android:theme="@style/AppTheme"
             android:screenOrientation="portrait" />
 
         <meta-data
@@ -42,6 +48,7 @@
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
+            android:theme="@style/SplashTheme"
             android:launchMode="singleTask"
             android:resizeableActivity="false"
             android:screenOrientation="portrait">

@@ -163,12 +163,10 @@ public class DownloadActivity extends AppCompatActivity {
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev){
         // 검색창 외 다른 터치 감시
-        // 현재 작동 오류가 발생하는 기종이 존재
-        // 수정 필요
         Rect viewRect = new Rect();
         EditText editText = (EditText)findViewById(R.id.search);
         editText.getGlobalVisibleRect(viewRect);
-        if (isSearch && !viewRect.contains((int)ev.getRawX(), (int)ev.getRawY())){
+        if (isSearch && !viewRect.contains((int)ev.getX(), (int)ev.getY())){
             editText.setText("");
             searchbuttonClick(editText);
         }
@@ -192,7 +190,6 @@ public class DownloadActivity extends AppCompatActivity {
             isSearch = true;
             editText.setVisibility(View.VISIBLE);
             editText.startAnimation(search_up);
-            Handler handler = new Handler();
         }
         // 검색창을 닫는 경우
         else{
@@ -226,7 +223,11 @@ public class DownloadActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
-            progressDialog = ProgressDialog.show(DownloadActivity.this, "Please Wait", null, true, true);
+            progressDialog = new ProgressDialog(DownloadActivity.this, R.style.DialogTransparent);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setCancelable(false);
+            progressDialog.setIndeterminate(true);
+            progressDialog.show();
         }
 
         @Override
@@ -407,7 +408,12 @@ public class DownloadActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
-            progressDialog = ProgressDialog.show(DownloadActivity.this, "Please Wait", "가구 데이터를 받는 중입니다.", true, false);
+            progressDialog = new ProgressDialog(DownloadActivity.this, R.style.Dialog);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setMessage("가구 데이터를 받는 중입니다.");
+            progressDialog.setCancelable(false);
+            progressDialog.setIndeterminate(true);
+            progressDialog.show();
         }
 
         @Override
@@ -626,9 +632,15 @@ public class DownloadActivity extends AppCompatActivity {
     public void createModel(String name){
         // 다운로드 진행 후 모델 렌더링 추가 및 가구 목록 리로드를 위하여 진행
         // 모델생성 완료 표시
-        AlertDialog.Builder alert  = new AlertDialog.Builder(this);
+        AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
         alert.setTitle("모델 다운");
         alert.setMessage(name + " 모델 다운 완료!");
+        alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
 
         alert.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
@@ -732,7 +744,7 @@ public class DownloadActivity extends AppCompatActivity {
                 imageButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        AlertDialog.Builder alert = new AlertDialog.Builder(DownloadActivity.this);
+                        AlertDialog.Builder alert = new AlertDialog.Builder(DownloadActivity.this, R.style.Dialog);
                         alert.setTitle("가구 모델 다운로드");
                         alert.setMessage(name.getText() + " 모델을 다운로드하시겠습니까?");
                         alert.setPositiveButton("다운", new DialogInterface.OnClickListener() {

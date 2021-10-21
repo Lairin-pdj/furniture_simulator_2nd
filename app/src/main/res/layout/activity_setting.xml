@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/setting"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:layout_marginTop="70dp"/>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:background="@drawable/download_bar_back"
+        android:adjustViewBounds="true"
+        android:scaleType="centerCrop">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="Settings"
+            android:textSize="30dp"
+            android:textColor="@color/white"/>
+
+    </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/imageButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_gravity="start|top"
+        android:layout_marginStart="7dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/backbutton"
+        android:onClick="backClick"/>
+
+
+
+
+</FrameLayout>

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
@@ -46,7 +47,9 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.fragment.app.Fragment;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 // androidx 이전
@@ -60,7 +63,7 @@ import androidx.recyclerview.widget.RecyclerView;
 //import android.support.v7.widget.RecyclerView;
 import android.os.Message;
 import android.os.Parcelable;
-import android.util.JsonWriter;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -77,7 +80,6 @@ import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -105,8 +107,6 @@ import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 //sceneform code
 //import com.google.ar.sceneform.ux.ArFragment;
-
-import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -239,8 +239,16 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private boolean isUp = false;
     private boolean isSubmenu = false;
     private boolean isDeco = false;
+    private boolean isSubDeco = false;
     private boolean isDel = false;
     private boolean isUpload = false;
+
+    // 설정관련 변수들
+    SharedPreferences spref;
+    private boolean isBattery;
+    private boolean isTimer;
+    private String whatFont;
+    private boolean isPlane;
 
     // 애니메이션 변수들
     private Animation translate_up;
@@ -250,6 +258,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
+        // 설정 적용
+        setEnvironment();
+
+        // 테마 설정
+        setTheme(R.style.AppTheme);
+
         // 멀티 권한 설정
         String[] permissions = new String[]{
                 Manifest.permission.CAMERA,
@@ -384,6 +398,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         // 배터리 표시
         setBatteryTimer();
+
+        // 시계 표시
+        setTimeTimer();
     }
 
     @Override
@@ -706,7 +723,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             case UNKNOWN_CHECKING:
             case UNKNOWN_ERROR:
             case UNKNOWN_TIMED_OUT:
-                AlertDialog.Builder alert  = new AlertDialog.Builder(this);
+                AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
                 alert.setTitle("ARCore 연결 실패");
                 alert.setMessage("인터넷 연결을 확인해주시거나 잠시 후에 다시 시도해주시길 바랍니다.");
                 alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
@@ -1144,6 +1161,14 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
     }
 
+    public void setEnvironment(){
+        spref = PreferenceManager.getDefaultSharedPreferences(this);
+        isBattery = spref.getBoolean("battery", true);
+        isTimer = spref.getBoolean("timer", true);
+        whatFont = spref.getString("font", "나눔");
+        isPlane = spref.getBoolean("plane", true);
+    }
+
     public void setFurniturePreview(){
         //미리보기 세팅용 코드
         selectPreview = (FrameLayout) findViewById(R.id.select_fur_preview);
@@ -1158,9 +1183,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         subRecyclerView.setLayoutManager(layoutManager);
 
-        // 구분자 적용
-        DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(getApplicationContext(), DividerItemDecoration.VERTICAL);
-        subRecyclerView.addItemDecoration(dividerItemDecoration);
+        // 데코 적용
+        if (!isSubDeco) {
+            subRecyclerView.addItemDecoration(new MainActivity.DividingItemDecoration(2));
+            isSubDeco = true;
+        }
 
         SubAdapter subAdapter = new SubAdapter(getApplicationContext());
 
@@ -1277,6 +1304,35 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         timer.schedule(battery, 0, 3000);
     }
 
+    public void setTimeTimer(){
+        FrameLayout frameLayout = findViewById(R.id.layout_time);
+        TextView textView = findViewById(R.id.text_time);
+        frameLayout.bringToFront();
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("aa hh:mm");
+
+        // 스레드 에러를 방지하기 위해 핸들러로 대신 처리
+        @SuppressLint("HandlerLeak")
+        Handler handler = new Handler(){
+            public void handleMessage(Message msg){
+                String time = dateFormat.format(new Date(System.currentTimeMillis()));
+                textView.setText(time);
+            }
+        };
+
+        // 주기적 갱신
+        TimerTask battery = new TimerTask() {
+            @Override
+            public void run() {
+                Log.v(TAG,"timer run");
+                Message msg = handler.obtainMessage();
+                handler.sendMessage(msg);
+            }
+        };
+        Timer timer = new Timer();
+        timer.schedule(battery, 0, 3000);
+    }
+
     public class CustomerAdapter extends RecyclerView.Adapter<CustomerAdapter.ViewHolder>{
         ArrayList<String> items = new ArrayList<>();
         Context context;
@@ -1331,13 +1387,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 delButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
                         alert.setTitle("가구 모델 삭제");
                         alert.setMessage(textView.getText() + " 모델을 삭제하시겠습니까?");
                         alert.setPositiveButton("제거", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                dialog.cancel();
                                 //제거 부분
                                 File path = new File(getFilesDir().getAbsolutePath() + "/models");
                                 File[] files = path.listFiles();
@@ -1372,6 +1427,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
                                 // 가구 목록의 변화가 있으므로 갱신
                                 setFurnitureList();
+
+                                Toast.makeText(getApplicationContext(), "제거 완료", Toast.LENGTH_SHORT).show();
+                                dialog.cancel();
                             }
                         });
                         alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
@@ -1395,7 +1453,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 uploadButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
                         alert.setTitle("가구 모델 업로드");
                         alert.setMessage(textView.getText() + " 모델을 업로드하시겠습니까?");
                         alert.setPositiveButton("업로드", new DialogInterface.OnClickListener() {
@@ -1436,7 +1494,15 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                         }
                         // 업로드 모드일 경우
                         else if (isUpload){
-                            uploadButton.callOnClick();
+                            // 기본 가구는 업로드하지 못하도록
+                            String [] strings = {"andy", "desk", "chair", "lamp"};
+
+                            if (!Arrays.asList(strings).contains(textView.getText())) {
+                                uploadButton.callOnClick();
+                            }
+                            else{
+                                Toast.makeText(MainActivity.this, "기본 모델은 업로드할 수 없습니다.", Toast.LENGTH_SHORT).show();
+                            }
                         }
                         // 삭제 모드일 경우
                         else {
@@ -1445,6 +1511,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
                             if (!Arrays.asList(strings).contains(textView.getText())) {
                                 delButton.callOnClick();
+                            }
+                            else{
+                                Toast.makeText(MainActivity.this, "기본 모델은 삭제할 수 없습니다.", Toast.LENGTH_SHORT).show();
                             }
                         }
                     }
@@ -1464,19 +1533,20 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                         bitmap = BitmapFactory.decodeStream(is);
                         imageButton.setImageBitmap(bitmap);
                     }else {
-                        imageButton.setImageResource(R.drawable.furniture_vector_icons_111434);
+                        imageButton.setImageResource(R.drawable.furniture_app_icon);
                     }
                 }catch (IOException e){
 
                 }
                 textView.setText(item);
 
-                // 기본 모델은 지울 수 없도록
+                // 기본 모델은 지우거나 업로드할 수 없도록
                 String [] strings = {"andy", "desk", "chair", "lamp"};
-
                 delButton = (Button)itemView.findViewById((R.id.delete));
+                uploadButton = (Button)itemView.findViewById((R.id.upload_check));
                 if (Arrays.asList(strings).contains(textView.getText())) {
                     delButton.setVisibility(View.INVISIBLE);
+                    uploadButton.setVisibility(View.INVISIBLE);
                 }
             }
         }
@@ -1584,7 +1654,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                                 furDeleteClick(null);
                                 break;
                             case "Settings":
-                                Toast.makeText(getApplicationContext(), "Settings", Toast.LENGTH_SHORT).show();
+                                settingClick(null);
                                 break;
                         }
                     }
@@ -1602,6 +1672,24 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
     }
 
+    public class DividingItemDecoration extends RecyclerView.ItemDecoration {
+        // 주어진 숫자 만큼 공간을 띄워주는 데코레이터
+        private final int dividing;
+
+        public DividingItemDecoration(int dividing) {
+            this.dividing = dividing;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+            int position = parent.getChildAdapterPosition(view); // item position
+
+            if (position != 0) {
+                outRect.top = dividing;
+            }
+        }
+    }
+
     private class UpData extends AsyncTask<String, Void, String> {
         ProgressDialog progressDialog;
         String errorString = null;
@@ -1610,7 +1698,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         protected void onPreExecute() {
             super.onPreExecute();
 
-            progressDialog = ProgressDialog.show(MainActivity.this, "Please Wait", "가구 데이터를 올리는 중입니다.", true, true);
+            progressDialog = new ProgressDialog(MainActivity.this, R.style.Dialog);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setMessage("가구 데이터를 받는 중입니다.");
+            progressDialog.setCancelable(false);
+            progressDialog.setIndeterminate(true);
+            progressDialog.show();
         }
 
         @Override
@@ -1796,9 +1889,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public void uploadModel(String name){
         if (name.equals("already exist")){
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+            AlertDialog.Builder alert = new AlertDialog.Builder(this, R.style.Dialog);
             alert.setTitle("모델 업로드 실패");
-            alert.setMessage(name + " 은(는) 이미 서버에 존재하는 모델입니다.");
+            alert.setMessage("이미 서버에 존재하는 모델입니다.");
             alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -1808,7 +1901,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             alert.show();
         }
         else {
-            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+            AlertDialog.Builder alert = new AlertDialog.Builder(this, R.style.Dialog);
             alert.setTitle("모델 업로드");
             alert.setMessage(name + " 모델 업로드 완료!");
             alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
@@ -1854,6 +1947,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             icon.setImageResource(R.drawable.upload_icon);
             icon.setVisibility(View.VISIBLE);
             text.setVisibility(View.VISIBLE);
+            Toast.makeText(getApplicationContext(), "업로드모드", Toast.LENGTH_SHORT).show();
         }
 
         // 뷰 갱신 및 위치 고정
@@ -1882,6 +1976,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             icon.setImageResource(R.drawable.del_icon);
             icon.setVisibility(View.VISIBLE);
             text.setVisibility(View.VISIBLE);
+            Toast.makeText(getApplicationContext(), "삭제모드", Toast.LENGTH_SHORT).show();
         }
 
         // 뷰 갱신 및 위치 고정
@@ -1987,17 +2082,38 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         Toast.makeText(getApplicationContext(), "3D 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
     }
 
+    public void settingClick(View view){
+        // 설정 액티비티로 이동
+        furnitureMenuClick(null);
+        Intent intent = new Intent(this, SettingActivity.class);
+
+        // 지연시간으로 애니메이션 효과 지속
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startActivityForResult(intent, 1);
+            }
+        }, 500);
+    }
+
     public void resetClick(View view){
         //리셋 확인 다이얼로그
-        AlertDialog.Builder alert  = new AlertDialog.Builder(this);
+        AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
         alert.setTitle("Reset");
-        alert.setMessage("배치된 모든 모델을 제거하고, \nPlane을 재설정 합니다.");
-        alert.setPositiveButton("진행", new DialogInterface.OnClickListener() {
+        alert.setMessage("배치된 모든 모델을 제거하고, 인식된 바닥을 초기화 합니다.");
+        alert.setPositiveButton("바닥까지 초기화", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                dialog.cancel();
+                // 모델 제거
                 anchors.clear();
                 selectedAnchor = -1;
+
+                // 선택해제
+                if (togled != null){
+                    togled = null;
+                    selectPreview.setVisibility(View.INVISIBLE);
+                }
 
                 // plane 초기화를 위해 세션 관련 작업 전부 정지
                 surfaceView.onPause();
@@ -2023,9 +2139,29 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     openCamera();
                 }
                 displayRotationHelper.onResume();
+
+                dialog.cancel();
+                Toast.makeText(getApplicationContext(), "재설정 완료", Toast.LENGTH_SHORT).show();
             }
         });
-        alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
+        alert.setNegativeButton("모델만 제거", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // 모델 제거
+                anchors.clear();
+                selectedAnchor = -1;
+
+                // 선택해제
+                if (togled != null){
+                    togled = null;
+                    selectPreview.setVisibility(View.INVISIBLE);
+                }
+
+                dialog.cancel();
+                Toast.makeText(getApplicationContext(), "모델 제거 완료", Toast.LENGTH_SHORT).show();
+            }
+        });
+        alert.setNeutralButton("취소", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
@@ -2142,7 +2278,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     }
                 }else {
                     //권한 거부시
-                    AlertDialog.Builder alert  = new AlertDialog.Builder(this);
+                    AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
                     alert.setTitle("APP permissions");
                     alert.setMessage("해당 앱을 이용하시려면 권한이 필요합니다.");
                     alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
@@ -2172,6 +2308,51 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 String newModel = data.getExtras().getString("modelname");
                 newModelName = newModel;
                 isNewModel = true;
+            }
+        }
+        else if (requestCode == 1){
+            if(resultCode == RESULT_OK) {
+                // 가구 삭제한 경우를 대비하기 위해
+                String [] strings = {"andy", "desk", "chair", "lamp"};
+
+                // 가구 목록 갱신
+                setFurnitureList();
+
+                // 이미 렌더링 되있는 앵커 중 기본 모델 아닌 것 제거
+                for (int i = 0; i < anchors.size(); i++){
+                    if (!Arrays.asList(strings).contains(anchors.get(i).name)){
+                        anchors.remove(i);
+                        i--;
+                    }
+                }
+                selectedAnchor = -1;
+
+                // 선택된 가구가 기본 모델이 아닌 경우 제거
+                if (togled != null && !Arrays.asList(strings).contains(togled)){
+                    togled = null;
+                    selectPreview.setVisibility(View.INVISIBLE);
+                }
+
+                // 각 종 설정 변경에 대비하기 위해
+                SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+                Boolean battery = pref.getBoolean("battery", true);
+                Boolean timer = pref.getBoolean("timer", true);
+                String font = pref.getString("font", "나눔");
+                Boolean plane = pref.getBoolean("plane", true);
+
+                // 각 변경에 대해 함수 적용
+                if (isBattery != battery){
+                    isBattery = battery;
+                }
+                if (isTimer != timer){
+                    isTimer = timer;
+                }
+                if (whatFont.equals(font)){
+                    whatFont = font;
+                }
+                if (isPlane != plane){
+                    isPlane = plane;
+                }
             }
         }
     }

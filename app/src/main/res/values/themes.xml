@@ -9,8 +9,6 @@
     </style>
 
     <style name="Theme.CameraTest.Fullscreen" parent="Theme.CameraTest">
-        <item name="android:actionBarStyle">@style/Widget.Theme.CameraTest.ActionBar.Fullscreen
-        </item>
         <item name="android:windowActionBarOverlay">true</item>
         <item name="android:windowBackground">@null</item>
     </style>

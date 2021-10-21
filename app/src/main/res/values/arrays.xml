@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="array_font">
+        <item>기본</item>
+        <item>나눔</item>
+        <item>카페</item>
+        <item>에스코드</item>
+    </string-array>
+</resources>
