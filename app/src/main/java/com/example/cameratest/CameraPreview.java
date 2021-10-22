@@ -1,39 +1,29 @@
 package com.example.cameratest;
 
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.net.Uri;
-import android.os.Environment;
-import androidx.appcompat.app.AlertDialog;
 // androidx 이전
 //import android.support.v7.app.AlertDialog;
+import android.hardware.camera2.CameraDevice;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback, Camera.PreviewCallback{
 
-    private Create2dActivity main;
+    private CreateActivity main;
     private Camera mCamera;
     public List<Camera.Size> listPreviewSizes;
     private Camera.Size previewSize;
@@ -42,7 +32,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public CameraPreview(Context context, AttributeSet attrs){
         super(context, attrs);
         this.context = context;
-        mCamera = Create2dActivity.getCamera();
+        mCamera = CreateActivity.getCamera();
         if(mCamera == null){
             mCamera = Camera.open();
         }
@@ -119,9 +109,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             mCamera.setParameters(parameters);
             mCamera.setPreviewDisplay(surfaceHolder);
             mCamera.startPreview();
-
-            //콜백 활성화를 위하여 중복 처리
-            mCamera.setPreviewCallback(this);
 
         } catch (IOException e) {
             e.printStackTrace();

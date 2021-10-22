@@ -16,6 +16,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -43,13 +44,12 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.preference.Preference;
-import androidx.preference.PreferenceFragmentCompat;
+import androidx.core.content.res.ResourcesCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 // androidx 이전
@@ -224,6 +224,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     // UI구현을 위한 변수들
     public static MainActivity getInstance;
     private RecyclerView recyclerView = null;
+    private RecyclerView subRecyclerView = null;
     private static class subMenuData{
         public int picture;
         public String name;
@@ -261,8 +262,24 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         // 설정 적용
         setEnvironment();
 
-        // 테마 설정
-        setTheme(R.style.AppTheme);
+        // 폰트 설정
+        switch (whatFont){
+            case "나눔R":
+                setTheme(R.style.AppTheme_NanumR);
+                break;
+            case "나눔B":
+                setTheme(R.style.AppTheme_NanumB);
+                break;
+            case "카페":
+                setTheme(R.style.AppTheme_Cafe);
+                break;
+            case "에스코드":
+                setTheme(R.style.AppTheme_Sc);
+                break;
+            default:
+                setTheme(R.style.AppTheme);
+                break;
+        }
 
         // 멀티 권한 설정
         String[] permissions = new String[]{
@@ -302,7 +319,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         // 프리뷰 내부저장소에 저장
         saveInternalPreviews();
 
-        // glsurfaceview 설정 코드
+        // view 설정 코드
         setContentView(R.layout.activity_main);
 
         Bundle extraBundle = getIntent().getExtras();
@@ -323,11 +340,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         tapHelper = new TapHelper(this);
         surfaceView.setOnTouchListener(tapHelper);
 
-        // plane스위치 표시
-        Switch planeSwitch = findViewById(R.id.switch1);
-        planeSwitch.bringToFront();
-        planeSwitch.setOnCheckedChangeListener(new planeChangedListener());
-
         // 초기튜토리얼 이미지 표시
         ImageView imageView = findViewById(R.id.imageView);
         imageView.bringToFront();
@@ -337,6 +349,16 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         // AR 시작
         resumeARCore();
+
+        // 선택된 가구 보여주는 뷰 초기화
+        setFurniturePreview();
+
+        // 가구목록 셋팅
+        setFurnitureList();
+
+        // 올리기
+        ConstraintLayout constraintLayout = findViewById(R.id.layout_timebattery);
+        constraintLayout.bringToFront();
     }
 
     @Override
@@ -390,17 +412,28 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         displayRotationHelper.onResume();
 
-        // 선택된 가구 보여주는 뷰 초기화
-        setFurniturePreview();
-
-        // 가구목록 셋팅
-        setFurnitureList();
 
         // 배터리 표시
-        setBatteryTimer();
+        if (isBattery) {
+            FrameLayout frameLayout = findViewById(R.id.layout_battery);
+            frameLayout.setVisibility(View.VISIBLE);
+            setBatteryTimer();
+        }
+        else{
+            FrameLayout frameLayout = findViewById(R.id.layout_battery);
+            frameLayout.setVisibility(View.GONE);
+        }
 
         // 시계 표시
-        setTimeTimer();
+        if (isTimer) {
+            FrameLayout frameLayout = findViewById(R.id.layout_time);
+            frameLayout.setVisibility(View.VISIBLE);
+            setTimeTimer();
+        }
+        else{
+            FrameLayout frameLayout = findViewById(R.id.layout_time);
+            frameLayout.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -659,7 +692,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         // Visualize planes.
-        //플레인 제거시 수정 필요 예상
         planeRenderer.drawPlanes(
                 sharedSession.getAllTrackables(Plane.class), camera.getDisplayOrientedPose(), projmtx);
 
@@ -1167,6 +1199,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         isTimer = spref.getBoolean("timer", true);
         whatFont = spref.getString("font", "나눔");
         isPlane = spref.getBoolean("plane", true);
+        isPlaneshow = isPlane;
     }
 
     public void setFurniturePreview(){
@@ -1178,7 +1211,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public void setSubmenu(){
         // 서브메뉴의 생성
-        RecyclerView subRecyclerView = findViewById(R.id.submenu_View);
+        subRecyclerView = findViewById(R.id.submenu_View);
 
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         subRecyclerView.setLayoutManager(layoutManager);
@@ -1191,12 +1224,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         SubAdapter subAdapter = new SubAdapter(getApplicationContext());
 
-        subAdapter.addItem(new subMenuData(R.drawable.title2d, "2D Create", "2D 가구 모델을 만들 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.title3d, "3D Create", "3D 가구 모델을 만들 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.title2d, "Model Create", "가구 모델을 만들 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.download_icon, "Download", "서버에서 다양한 가구 모델을 받을 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.upload_icon, "Upload", "가구 모델을 서버로 올릴 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.del_icon, "Model Delete", "필요 없는 가구를 삭제할 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.setting_icon, "Settings", "여러가지 설정을 조절할 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.image_load_fail, "Help", "사용방법에 대한 설명을 확인 할 수 있습니다."));
 
         subRecyclerView.setAdapter(subAdapter);
     }
@@ -1249,12 +1282,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public void setBatteryTimer(){
         // 순서 재조정
-        FrameLayout frameLayout = findViewById(R.id.layout_battery);
         TextView textView = findViewById(R.id.textView_battery);
         ImageView imageView = findViewById(R.id.imageView_battery);
-        frameLayout.bringToFront();
-        imageView.bringToFront();
-        textView.bringToFront();
 
         // 필터 설정
         IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
@@ -1305,9 +1334,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void setTimeTimer(){
-        FrameLayout frameLayout = findViewById(R.id.layout_time);
         TextView textView = findViewById(R.id.text_time);
-        frameLayout.bringToFront();
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("aa hh:mm");
 
@@ -1375,6 +1402,22 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 super(itemView);
 
                 textView = (TextView)itemView.findViewById(R.id.textView);
+
+                // 폰트 적용
+                switch (whatFont){
+                    case "나눔R":
+                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundr));
+                        break;
+                    case "나눔B":
+                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundb));
+                        break;
+                    case "카페":
+                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.cafe24surround));
+                        break;
+                    case "에스코드":
+                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.scdream3));
+                        break;
+                }
 
                 // 삭제버튼
                 delButton = (Button)itemView.findViewById((R.id.delete));
@@ -1485,7 +1528,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                         if (!isDel && !isUpload) {
                             Toast.makeText(MainActivity.this, textView.getText(), Toast.LENGTH_SHORT).show();
                             togled = textView.getText().toString();
-                            textViewPreview.setText(textView.getText() + " 선택됨");
+                            textViewPreview.setText(textView.getText() + " 선택");
                             BitmapDrawable bd = (BitmapDrawable) imageButton.getDrawable();
                             Bitmap temp = bd.getBitmap();
                             imageViewPreview.setImageBitmap(temp);
@@ -1638,11 +1681,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     public void onClick(View v) {
                         String temp = name.getText().toString();
                         switch (temp){
-                            case "2D Create":
-                                button2dClick(null);
-                                break;
-                            case "3D Create":
-                                button3dClick(null);
+                            case "Model Create":
+                                buttonCreateClick(null);
                                 break;
                             case "Download":
                                 downloadClick(null);
@@ -1656,12 +1696,35 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                             case "Settings":
                                 settingClick(null);
                                 break;
+                            case "Help":
+                                helpClick(null);
+                                break;
                         }
                     }
                 });
                 picture = (ImageView)itemView.findViewById(R.id.menu_image);
                 name = (TextView)itemView.findViewById(R.id.menu_name);
                 text = (TextView)itemView.findViewById(R.id.menu_text);
+
+                // 폰트 적용
+                switch (whatFont){
+                    case "나눔R":
+                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundr));
+                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundr));
+                        break;
+                    case "나눔B":
+                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundb));
+                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundb));
+                        break;
+                    case "카페":
+                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.cafe24surround));
+                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.cafe24surround));
+                        break;
+                    case "에스코드":
+                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.scdream3));
+                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.scdream3));
+                        break;
+                }
             }
 
             public void setItem(subMenuData item){
@@ -1925,6 +1988,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             @Override
             public void run() {
                 startActivityForResult(intent, 0);
+                overridePendingTransition(R.anim.activity_left_enter, R.anim.activity_left_exit);
             }
         }, 500);
     }
@@ -2063,10 +2127,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         furnitureMenuClick(null);
     }
 
-    public void button2dClick(View view){
-        // 2d 액티비티로 이동
+    public void buttonCreateClick(View view){
+        // create 액티비티로 이동
         furnitureMenuClick(null);
-        Intent intent = new Intent(this, Create2dActivity.class);
+        Intent intent = new Intent(this, CreateActivity.class);
 
         // 지연시간으로 애니메이션 효과 지속
         Handler handler = new Handler();
@@ -2074,12 +2138,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             @Override
             public void run() {
                 startActivityForResult(intent, 0);
+                overridePendingTransition(R.anim.activity_left_enter, R.anim.activity_left_exit);
             }
         }, 500);
-    }
-
-    public void button3dClick(View view){
-        Toast.makeText(getApplicationContext(), "3D 기능은 준비중입니다.", Toast.LENGTH_SHORT).show();
     }
 
     public void settingClick(View view){
@@ -2093,6 +2154,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             @Override
             public void run() {
                 startActivityForResult(intent, 1);
+                overridePendingTransition(R.anim.activity_left_enter, R.anim.activity_left_exit);
             }
         }, 500);
     }
@@ -2170,21 +2232,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         alert.show();
     }
 
-    class planeChangedListener implements CompoundButton.OnCheckedChangeListener{
-        // 플레인 설정이 바뀐 것을 감지
-        @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if(isChecked){
-                Toast.makeText(getApplicationContext(), "plane visible!", Toast.LENGTH_SHORT).show();
-                isPlaneChanged = true;
-                isPlaneshow = true;
-            }
-            else{
-                Toast.makeText(getApplicationContext(), "plane invisible!", Toast.LENGTH_SHORT).show();
-                isPlaneChanged = true;
-                isPlaneshow = false;
-            }
-        }
+    public void helpClick(View view){
+        Toast.makeText(getApplicationContext(), "도움말 기능은 준비 중 입니다.", Toast.LENGTH_SHORT).show();
     }
 
     public void captureClick(View view) throws InterruptedException {
@@ -2341,17 +2390,40 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 Boolean plane = pref.getBoolean("plane", true);
 
                 // 각 변경에 대해 함수 적용
-                if (isBattery != battery){
+                if (isBattery != battery) {
                     isBattery = battery;
                 }
                 if (isTimer != timer){
                     isTimer = timer;
                 }
-                if (whatFont.equals(font)){
+                if (!whatFont.equals(font)){
                     whatFont = font;
+
+                    switch (whatFont){
+                        case "나눔R":
+                            setTheme(R.style.AppTheme_NanumR);
+                            break;
+                        case "나눔B":
+                            setTheme(R.style.AppTheme_NanumB);
+                            break;
+                        case "카페":
+                            setTheme(R.style.AppTheme_Cafe);
+                            break;
+                        case "에스코드":
+                            setTheme(R.style.AppTheme_Sc);
+                            break;
+                        default:
+                            setTheme(R.style.AppTheme);
+                            break;
+                    }
+                    onPause();
+                    recreate();
+                    firstPlanecheck = true;
                 }
                 if (isPlane != plane){
                     isPlane = plane;
+                    isPlaneChanged = true;
+                    isPlaneshow = isPlane;
                 }
             }
         }

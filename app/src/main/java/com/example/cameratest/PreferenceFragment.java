@@ -1,6 +1,7 @@
 package com.example.cameratest;
 
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.widget.Toast;
 
@@ -8,15 +9,21 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.preference.DialogPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceManager;
 
 import java.io.File;
 import java.util.Arrays;
 
 public class PreferenceFragment extends PreferenceFragmentCompat {
 
+    SharedPreferences pref;
+
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.settings, rootKey);
+        Preference font = (Preference)findPreference("font");
+        pref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        font.setSummary(pref.getString("font", "기본") + "\n \n폰트 변경시 화면 갱신으로 인한 깜빡임이 발생할 수 있습니다.");
     }
 
     @Override

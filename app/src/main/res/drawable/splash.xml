@@ -9,8 +9,8 @@
         android:right="10dp"
         android:drawable="@color/white"/>
     <item
-        android:width="400dp"
-        android:height="400dp"
+        android:width="300dp"
+        android:height="300dp"
         android:bottom="100dp"
         android:gravity="center">
         <bitmap
@@ -23,7 +23,7 @@
         android:width="125dp"
         android:height="50dp"
         android:left="20dp"
-        android:bottom="200dp"
+        android:bottom="150dp"
         android:gravity="bottom|center_horizontal">
         <bitmap
             android:src="@drawable/loading_text"

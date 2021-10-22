@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="UI 설정">
+    <PreferenceCategory
+        android:title="UI 설정"
+        android:iconSpaceReserved="false">
 
         <SwitchPreference
             android:key="battery"
             android:title="배터리 표시"
             android:summary="메인화면의 배터리 표시를 끄거나 킬 수 있습니다."
-            android:defaultValue="true"/>
+            android:defaultValue="true"
+            android:icon="@drawable/setting_icon"/>
 
         <SwitchPreference
             android:key="timer"
             android:title="시계 표시"
             android:summary="메인화면의 시계 표시를 끄거나 킬 수 있습니다."
-            android:defaultValue="true"/>
+            android:defaultValue="true"
+            android:icon="@drawable/setting_icon"/>
 
         <ListPreference
             android:key="font"
@@ -21,31 +25,39 @@
             android:summary="폰트이름"
             android:entries="@array/array_font"
             android:entryValues="@array/array_font"
-            android:defaultValue="기본"/>
+            android:defaultValue="기본"
+            android:icon="@drawable/setting_icon"/>
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="렌더링 설정">
+    <PreferenceCategory
+        android:title="렌더링 설정"
+        android:iconSpaceReserved="false">
 
         <SwitchPreference
             android:key="plane"
             android:title="바닥 표시"
             android:summary="바닥 표시를 선택할 수 있습니다."
-            android:defaultValue="true" />
+            android:defaultValue="true"
+            android:icon="@drawable/setting_icon"/>
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="저장공간 관리">
+    <PreferenceCategory
+        android:title="저장공간 관리"
+        android:iconSpaceReserved="false">
 
         <Preference
             android:key="cache"
             android:title="캐시와 임시 데이터 삭제"
-            android:summary="캐시와 임시 데이터를 삭제합니다." />
+            android:summary="캐시와 임시 데이터를 삭제합니다."
+            android:icon="@drawable/setting_icon"/>
 
         <Preference
             android:key="data"
             android:title="가구 데이터 삭제"
-            android:summary="기본 가구를 제외한 모든 가구 데이터를 삭제합니다."/>
+            android:summary="기본 가구를 제외한 모든 가구 데이터를 삭제합니다."
+            android:icon="@drawable/setting_icon"/>
 
     </PreferenceCategory>
 

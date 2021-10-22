@@ -5,16 +5,49 @@
         <item name="windowNoTitle">true</item>
 
         <!--
+        <item name="android:fontFamily">@android:sans-serif</item>
+        -->
+    </style>
+
+    <style name="AppTheme_NanumB" parent="Theme.AppCompat.Light">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
+        <item name="android:fontFamily">@font/nanumroundb</item>
+        <item name="android:font" tools:targetApi="o">@font/nanumroundb</item>
+    </style>
+
+    <style name="AppTheme_NanumR" parent="Theme.AppCompat.Light">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
+        <item name="android:fontFamily">@font/nanumroundr</item>
+        <item name="android:font" tools:targetApi="o">@font/nanumroundr</item>
+    </style>
+
+    <style name="AppTheme_Cafe" parent="Theme.AppCompat.Light">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
         <item name="android:fontFamily">@font/cafe24surround</item>
         <item name="android:font" tools:targetApi="o">@font/cafe24surround</item>
-        -->
+    </style>
+
+    <style name="AppTheme_Sc" parent="Theme.AppCompat.Light">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+
+        <item name="android:fontFamily">@font/scdream3</item>
+        <item name="android:font" tools:targetApi="o">@font/scdream3</item>
     </style>
 
     <style name="SplashTheme" parent="Theme.AppCompat.Light">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
-        <item name="android:windowBackground">@drawable/splash</item> </style>
+        <item name="android:windowBackground">@drawable/splash</item>
+        <item name="android:fontFamily">@android:sans-serif</item>
+    </style>
 
     <style name="Dialog" parent="Theme.AppCompat.Light.Dialog">
         <item name="android:windowBackground">@drawable/dialog_round</item>

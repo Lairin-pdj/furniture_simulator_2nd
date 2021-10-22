@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -25,6 +26,7 @@ import androidx.recyclerview.widget.RecyclerView;
 //import android.support.v7.app.AppCompatActivity;
 //import android.support.v7.widget.GridLayoutManager;
 //import android.support.v7.widget.RecyclerView;
+import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.util.Log;
 import android.util.TypedValue;
@@ -103,6 +105,26 @@ public class DownloadActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 폰트 설정
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        switch (pref.getString("font", "기본")){
+            case "나눔R":
+                setTheme(R.style.AppTheme_NanumR);
+                break;
+            case "나눔B":
+                setTheme(R.style.AppTheme_NanumB);
+                break;
+            case "카페":
+                setTheme(R.style.AppTheme_Cafe);
+                break;
+            case "에스코드":
+                setTheme(R.style.AppTheme_Sc);
+                break;
+            default:
+                setTheme(R.style.AppTheme);
+                break;
+        }
+
         super.onCreate(savedInstanceState);
 
         // 풀스크린
@@ -176,6 +198,13 @@ public class DownloadActivity extends AppCompatActivity {
 
     public void backbuttonClick(View view){
         finish();
+        overridePendingTransition(R.anim.activity_right_enter, R.anim.activity_right_exit);
+    }
+
+    @Override
+    public void onBackPressed() {
+        backbuttonClick(null);
+        super.onBackPressed();
     }
 
     public void searchbuttonClick(View view){
@@ -649,6 +678,7 @@ public class DownloadActivity extends AppCompatActivity {
                 data.putExtra("modelname", name);
                 setResult(RESULT_OK, data);
                 finish();
+                overridePendingTransition(R.anim.activity_right_enter, R.anim.activity_right_exit);
             }
         });
 

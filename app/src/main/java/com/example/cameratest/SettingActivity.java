@@ -23,6 +23,26 @@ public class SettingActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
+        // 폰트 설정
+        pref = PreferenceManager.getDefaultSharedPreferences(this);
+        switch (pref.getString("font", "기본")){
+            case "나눔R":
+                setTheme(R.style.AppTheme_NanumR);
+                break;
+            case "나눔B":
+                setTheme(R.style.AppTheme_NanumB);
+                break;
+            case "카페":
+                setTheme(R.style.AppTheme_Cafe);
+                break;
+            case "에스코드":
+                setTheme(R.style.AppTheme_Sc);
+                break;
+            default:
+                setTheme(R.style.AppTheme);
+                break;
+        }
+
         super.onCreate(savedInstanceState);
 
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -31,41 +51,8 @@ public class SettingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_setting);
         getSupportFragmentManager().beginTransaction().replace(R.id.setting, new PreferenceFragment()).commit();
 
-        pref = PreferenceManager.getDefaultSharedPreferences(this);
-        pref.registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
-            @Override
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                switch (key){
-                    case "battery":
-                        if (pref.getBoolean("battery", true)){
-                            Toast.makeText(getApplicationContext(), "배터리 켜기", Toast.LENGTH_SHORT).show();
-                        }
-                        else{
-                            Toast.makeText(getApplicationContext(), "배터리 끄기", Toast.LENGTH_SHORT).show();
-                        }
-                        break;
-                    case "timer":
-                        if (pref.getBoolean("timer", true)){
-                            Toast.makeText(getApplicationContext(), "시계 켜기", Toast.LENGTH_SHORT).show();
-                        }
-                        else{
-                            Toast.makeText(getApplicationContext(), "시계 끄기", Toast.LENGTH_SHORT).show();
-                        }
-                        break;
-                    case "font":
-                        Toast.makeText(getApplicationContext(), pref.getString("font", "나눔"), Toast.LENGTH_SHORT).show();
-                        break;
-                    case "plane":
-                        if (pref.getBoolean("plane", true)){
-                            Toast.makeText(getApplicationContext(), "바닥 켜기", Toast.LENGTH_SHORT).show();
-                        }
-                        else{
-                            Toast.makeText(getApplicationContext(), "바닥 끄기", Toast.LENGTH_SHORT).show();
-                        }
-                        break;
-                }
-            }
-        });
+
+        pref.registerOnSharedPreferenceChangeListener(listener);
     }
 
     @Override
@@ -83,6 +70,63 @@ public class SettingActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    android.content.SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener(){
+        @Override
+        public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            switch (key){
+                case "battery":
+                    if (pref.getBoolean("battery", true)){
+                        Toast.makeText(getApplicationContext(), "배터리 켜기", Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        Toast.makeText(getApplicationContext(), "배터리 끄기", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                case "timer":
+                    if (pref.getBoolean("timer", true)){
+                        Toast.makeText(getApplicationContext(), "시계 켜기", Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        Toast.makeText(getApplicationContext(), "시계 끄기", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                case "font":
+                    // 폰트 설정
+                    String whatFont = pref.getString("font", "기본");
+                    switch (whatFont){
+                        case "나눔R":
+                            setTheme(R.style.AppTheme_NanumR);
+                            break;
+                        case "나눔B":
+                            setTheme(R.style.AppTheme_NanumB);
+                            break;
+                        case "카페":
+                            setTheme(R.style.AppTheme_Cafe);
+                            break;
+                        case "에스코드":
+                            setTheme(R.style.AppTheme_Sc);
+                            break;
+                        default:
+                            setTheme(R.style.AppTheme);
+                            break;
+                    }
+                    setContentView(R.layout.activity_setting);
+                    getFragmentManager().isDestroyed();
+                    getSupportFragmentManager().beginTransaction().replace(R.id.setting, new PreferenceFragment()).commit();
+                    pref.registerOnSharedPreferenceChangeListener(listener);
+                    break;
+                case "plane":
+                    if (pref.getBoolean("plane", true)){
+                        Toast.makeText(getApplicationContext(), "바닥 켜기", Toast.LENGTH_SHORT).show();
+                    }
+                    else{
+                        Toast.makeText(getApplicationContext(), "바닥 끄기", Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+            }
+        }
+    };
+
     @Override
     public void onBackPressed() {
         backClick(null);
@@ -93,5 +137,6 @@ public class SettingActivity extends AppCompatActivity {
         Intent data = new Intent();
         setResult(RESULT_OK, data);
         finish();
+        overridePendingTransition(R.anim.activity_right_enter, R.anim.activity_right_exit);
     }
 }

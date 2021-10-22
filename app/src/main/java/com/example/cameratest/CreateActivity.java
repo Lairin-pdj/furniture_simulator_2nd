@@ -1,27 +1,29 @@
 package com.example.cameratest;
 
-import android.Manifest;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.media.MediaActionSound;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.Handler;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.viewpager.widget.ViewPager;
 // androidx 이전
 //import android.support.v7.app.AlertDialog;
 //import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -29,11 +31,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TabHost;
+import android.widget.TableLayout;
 import android.widget.Toast;
 
-import com.google.ar.core.ArCoreApk;
-import com.google.ar.core.Session;
-import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
+import com.google.android.material.tabs.TabItem;
+import com.google.android.material.tabs.TabLayout;
 
 import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
@@ -52,28 +55,29 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 import de.javagl.obj.Obj;
 import de.javagl.obj.ObjReader;
 import de.javagl.obj.ObjWriter;
 
-import static android.graphics.Bitmap.Config.ARGB_8888;
 import static android.graphics.Bitmap.Config.RGB_565;
 import static org.opencv.imgproc.Imgproc.COLOR_BGR2RGB;
+import static org.opencv.imgproc.Imgproc.FILLED;
 import static org.opencv.imgproc.Imgproc.cvtColor;
 import static org.opencv.imgproc.Imgproc.rectangle;
 
-public class Create2dActivity extends AppCompatActivity {
+public class CreateActivity extends AppCompatActivity {
 
     private static CameraPreview surfaceView;
     private SurfaceHolder holder;
     private static Camera mCamera;
-    public static Create2dActivity getInstance;
+    public static CreateActivity getInstance;
     public static Bitmap bm;
+
+    private ViewPager viewPager;
+    private TabLayout tabLayout;
 
     String modelName = null;
 
@@ -87,6 +91,26 @@ public class Create2dActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // 폰트 설정
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        switch (pref.getString("font", "기본")){
+            case "나눔R":
+                setTheme(R.style.AppTheme_NanumR);
+                break;
+            case "나눔B":
+                setTheme(R.style.AppTheme_NanumB);
+                break;
+            case "카페":
+                setTheme(R.style.AppTheme_Cafe);
+                break;
+            case "에스코드":
+                setTheme(R.style.AppTheme_Sc);
+                break;
+            default:
+                setTheme(R.style.AppTheme);
+                break;
+        }
+
         super.onCreate(savedInstanceState);
 
         // 풀 스크린 적용
@@ -94,12 +118,39 @@ public class Create2dActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        setContentView(R.layout.activity_create2d);
+        setContentView(R.layout.activity_create);
     }
+
     @Override
     protected void onResume() {
         super.onResume();
         setInit();
+
+        tabLayout = (TabLayout)findViewById(R.id.tab_layout);
+        tabLayout.bringToFront();
+        tabLayout.addTab(tabLayout.newTab().setText("2D"));
+        tabLayout.addTab(tabLayout.newTab().setText("3D"));
+
+        viewPager = (ViewPager) findViewById(R.id.view_pager);
+        viewPager.setAdapter(new PagerAdapter(getSupportFragmentManager()));
+
+        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                viewPager.setCurrentItem(tab.getPosition());
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+
+            }
+        });
     }
 
     @Override
@@ -120,6 +171,7 @@ public class Create2dActivity extends AppCompatActivity {
 
     public void backbuttonClick(View view){
         finish();
+        overridePendingTransition(R.anim.activity_right_enter, R.anim.activity_right_exit);
     }
 
     public void captureClick(View view){
@@ -128,17 +180,25 @@ public class Create2dActivity extends AppCompatActivity {
         sound.play(MediaActionSound.SHUTTER_CLICK);
 
         // 콜백함수의 진행을 기다린 뒤 저장 시도
+        mCamera.setPreviewCallback(surfaceView);
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
                 screenShot(bm);
+                mCamera.setPreviewCallback(null);
             }
-        }, 200);
+        }, 300);
 
         //캡쳐버튼 비활성화
         Button button = (Button)findViewById(R.id.capture);
         button.setEnabled(false);
+    }
+
+    @Override
+    public void onBackPressed() {
+        backbuttonClick(null);
+        super.onBackPressed();
     }
 
     public void screenShot(Bitmap bm){
@@ -383,6 +443,7 @@ public class Create2dActivity extends AppCompatActivity {
                 setResult(RESULT_OK, data);
                 modelName = null;
                 finish();
+                overridePendingTransition(R.anim.activity_right_enter, R.anim.activity_right_exit);
             }
         });
         alert.show();
@@ -402,7 +463,7 @@ public class Create2dActivity extends AppCompatActivity {
         getInstance = this;
         mCamera = Camera.open();
 
-        setContentView(R.layout.activity_create2d);
+        setContentView(R.layout.activity_create);
         surfaceView = (CameraPreview)findViewById(R.id.preview);
 
         holder = surfaceView.getHolder();

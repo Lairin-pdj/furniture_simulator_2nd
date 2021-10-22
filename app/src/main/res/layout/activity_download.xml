@@ -15,11 +15,15 @@
         android:scaleType="centerCrop">
 
         <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="300dp"
+            android:layout_height="45dp"
             android:layout_gravity="center"
+            android:gravity="center"
             android:text="Furnitures"
-            android:textSize="30dp"
+            android:autoSizeMaxTextSize="100sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="2sp"
+            android:autoSizeTextType="uniform"
             android:textColor="@color/white"/>
 
     </FrameLayout>
