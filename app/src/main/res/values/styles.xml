@@ -4,9 +4,7 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
 
-        <!--
         <item name="android:fontFamily">@android:sans-serif</item>
-        -->
     </style>
 
     <style name="AppTheme_NanumB" parent="Theme.AppCompat.Light">

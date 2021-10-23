@@ -93,6 +93,6 @@
         android:scaleType="centerCrop"
         android:background="#DDDDDD"
         android:scrollbars="vertical"
-        android:overScrollMode="never" />
+        android:overScrollMode="never"/>
 
 </FrameLayout>

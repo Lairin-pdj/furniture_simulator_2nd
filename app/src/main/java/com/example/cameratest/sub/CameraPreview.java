@@ -1,4 +1,4 @@
-package com.example.cameratest;
+package com.example.cameratest.sub;
 
 import android.content.Context;
 import android.content.res.Configuration;
@@ -16,6 +16,9 @@ import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.Toast;
+
+import com.example.cameratest.CreateActivity;
+import com.example.cameratest.MainActivity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

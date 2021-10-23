@@ -106,14 +106,30 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <ImageView
-            android:id="@+id/imageView"
-            android:layout_width="360dp"
+            android:id="@+id/gif_plane_tutirial"
+            android:layout_width="wrap_content"
             android:layout_height="200dp"
             android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginStart="50dp"
+            android:layout_marginEnd="50dp"
             android:layout_marginBottom="200dp"
-            android:scaleType="fitCenter"
-            android:adjustViewBounds="true"
-            android:background="@drawable/planetutorial" />
+            android:adjustViewBounds="true" />
+
+        <TextView
+            android:id="@+id/gif_plane_tutirial_text"
+            android:layout_width="250dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginStart="70dp"
+            android:layout_marginEnd="70dp"
+            android:layout_marginBottom="350dp"
+            android:gravity="center"
+            android:textColor="@color/white"
+            android:text="바닥을 감지 할 수 있도록 핸드폰을 좌우로 가볍게 움직여주세요."
+            android:autoSizeMaxTextSize="100sp"
+            android:autoSizeMinTextSize="10sp"
+            android:autoSizeStepGranularity="2sp"
+            android:autoSizeTextType="uniform"/>
 
         <android.opengl.GLSurfaceView
             android:id="@+id/glsurfaceview"
@@ -180,17 +196,17 @@
             android:layout_width="270dp"
             android:layout_height="450dp"
             android:layout_gravity="end|bottom"
-            android:layout_marginBottom="280dp"
-            android:background="#EEEEEE"
+            android:layout_marginBottom="260dp"
+            android:background="@drawable/half_corner_shape"
             android:visibility="invisible">
 
             <TextView
                 android:layout_width="100dp"
-                android:layout_height="30dp"
+                android:layout_height="35dp"
                 android:layout_gravity="start|top"
                 android:gravity="center_vertical|start"
-                android:layout_marginStart="10dp"
-                android:layout_marginTop="2dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginTop="5dp"
                 android:text="메뉴"
                 android:autoSizeMaxTextSize="100sp"
                 android:autoSizeMinTextSize="10sp"
@@ -203,7 +219,7 @@
                 android:id="@+id/submenu_View"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_marginTop="45dp"
+                android:layout_marginTop="40dp"
                 android:layout_marginStart="10dp"
                 android:layout_marginBottom="10dp"
                 android:scrollbars="vertical"
@@ -214,7 +230,7 @@
         <FrameLayout
             android:id="@+id/furniture_list_frame"
             android:layout_width="match_parent"
-            android:layout_height="260dp"
+            android:layout_height="240dp"
             android:layout_gravity="bottom"
             android:background="@color/white"
             android:visibility="invisible">

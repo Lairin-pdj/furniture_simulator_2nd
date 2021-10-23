@@ -1,4 +1,4 @@
-package com.example.cameratest;
+package com.example.cameratest.sub;
 
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
@@ -10,6 +10,8 @@ import androidx.preference.DialogPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
+
+import com.example.cameratest.R;
 
 import java.io.File;
 import java.util.Arrays;

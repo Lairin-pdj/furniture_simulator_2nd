@@ -1,4 +1,4 @@
-package com.example.cameratest;
+package com.example.cameratest.helper;
 
 import android.app.Activity;
 import android.content.Context;

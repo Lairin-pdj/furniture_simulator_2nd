@@ -1,4 +1,4 @@
-package com.example.cameratest;
+package com.example.cameratest.helper;
 
 import android.content.Context;
 import android.view.GestureDetector;

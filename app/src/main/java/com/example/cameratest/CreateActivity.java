@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
-import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -23,6 +22,7 @@ import androidx.viewpager.widget.ViewPager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.View;
 import android.view.Window;
@@ -31,11 +31,11 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.TabHost;
-import android.widget.TableLayout;
-import android.widget.Toast;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
-import com.google.android.material.tabs.TabItem;
+import com.example.cameratest.sub.CameraPreview;
+import com.example.cameratest.sub.PagerAdapter;
 import com.google.android.material.tabs.TabLayout;
 
 import org.opencv.android.OpenCVLoader;
@@ -64,8 +64,8 @@ import de.javagl.obj.ObjWriter;
 
 import static android.graphics.Bitmap.Config.RGB_565;
 import static org.opencv.imgproc.Imgproc.COLOR_BGR2RGB;
-import static org.opencv.imgproc.Imgproc.FILLED;
 import static org.opencv.imgproc.Imgproc.cvtColor;
+import static org.opencv.imgproc.Imgproc.findContours;
 import static org.opencv.imgproc.Imgproc.rectangle;
 
 public class CreateActivity extends AppCompatActivity {
@@ -78,6 +78,24 @@ public class CreateActivity extends AppCompatActivity {
 
     private ViewPager viewPager;
     private TabLayout tabLayout;
+    TabLayout.TabLayoutOnPageChangeListener listener;
+
+    // 생성 도중 터치 무효화
+    View.OnTouchListener disable_touch = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            return true;
+        }
+    };
+    View.OnTouchListener enable_touch = new View.OnTouchListener() {
+        @Override
+        public boolean onTouch(View v, MotionEvent event) {
+            return false;
+        }
+    };
+
+    private int mode = 0;
+
 
     String modelName = null;
 
@@ -130,15 +148,18 @@ public class CreateActivity extends AppCompatActivity {
         tabLayout.bringToFront();
         tabLayout.addTab(tabLayout.newTab().setText("2D"));
         tabLayout.addTab(tabLayout.newTab().setText("3D"));
+        listener = new TabLayout.TabLayoutOnPageChangeListener(tabLayout);
+
 
         viewPager = (ViewPager) findViewById(R.id.view_pager);
         viewPager.setAdapter(new PagerAdapter(getSupportFragmentManager()));
 
-        viewPager.addOnPageChangeListener(new TabLayout.TabLayoutOnPageChangeListener(tabLayout));
+        viewPager.addOnPageChangeListener(listener);
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 viewPager.setCurrentItem(tab.getPosition());
+                mode = tab.getPosition();
             }
 
             @Override
@@ -175,24 +196,43 @@ public class CreateActivity extends AppCompatActivity {
     }
 
     public void captureClick(View view){
-        //소리 재생
-        MediaActionSound sound = new MediaActionSound();
-        sound.play(MediaActionSound.SHUTTER_CLICK);
+        if (mode == 0) {
+            //소리 재생
+            MediaActionSound sound = new MediaActionSound();
+            sound.play(MediaActionSound.SHUTTER_CLICK);
 
-        // 콜백함수의 진행을 기다린 뒤 저장 시도
-        mCamera.setPreviewCallback(surfaceView);
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                screenShot(bm);
-                mCamera.setPreviewCallback(null);
-            }
-        }, 300);
+            // 콜백함수의 진행을 기다린 뒤 저장 시도
+            mCamera.setPreviewCallback(surfaceView);
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    screenShot(bm);
+                    mCamera.setPreviewCallback(null);
+                }
+            }, 300);
 
-        //캡쳐버튼 비활성화
-        Button button = (Button)findViewById(R.id.capture);
-        button.setEnabled(false);
+            //캡쳐버튼 비활성화
+            Button button = (Button) findViewById(R.id.capture);
+            button.setEnabled(false);
+
+            viewPager.removeOnPageChangeListener(listener);
+            LinearLayout tab = (LinearLayout) tabLayout.getChildAt(0);
+            tab.getChildAt(0).setOnTouchListener(disable_touch);
+            tab.getChildAt(1).setOnTouchListener(disable_touch);
+        }
+        else{
+            AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
+            alert.setTitle("3D Create");
+            alert.setMessage("해당 기능은 준비 중입니다.");
+            alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                }
+            });
+            alert.show();
+        }
     }
 
     @Override
@@ -242,10 +282,13 @@ public class CreateActivity extends AppCompatActivity {
             imageView.setImageBitmap(bm);
 
             FrameLayout frameLayout = (FrameLayout)findViewById(R.id.objectpreview);
+            frameLayout.bringToFront();
             frameLayout.setVisibility(View.VISIBLE);
         }
         else{
-            Toast.makeText(getApplicationContext(), "capture failed", Toast.LENGTH_SHORT).show();
+            AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
+            alert.setMessage("촬영에 실패했어요.\n다시 시도해주세요.");
+            alert.show();
         }
     }
 
@@ -313,6 +356,10 @@ public class CreateActivity extends AppCompatActivity {
             }
         }
 
+        // 감지 못한 경우 체크
+        TextView textView = (TextView)findViewById(R.id.text_opencv_check);
+        Button button = (Button)findViewById(R.id.button_ok);
+
         //제일 큰 사각형  출력
         if(contoursRemoved.size()>0) {
             Rect rect = null;
@@ -337,6 +384,13 @@ public class CreateActivity extends AppCompatActivity {
                         , rect.br()
                         , new Scalar(255, 0, 0), 5);
             }
+
+            textView.setText("감지한 사물을 빨간색 네모로 표기했어요.");
+            button.setVisibility(View.VISIBLE);
+        }
+        else {
+            textView.setText("사물을 감지하지 못했어요. 다시 찍어주세요.");
+            button.setVisibility(View.INVISIBLE);
         }
 
         Utils.matToBitmap(imageMat, bm);
@@ -369,6 +423,8 @@ public class CreateActivity extends AppCompatActivity {
         alert.setMessage("모델 이름을 정해주세요.");
 
         EditText name = new EditText(this);
+        name.setPadding(20, 20, 20, 20);
+        name.setHighlightColor(Color.TRANSPARENT);
         alert.setView(name);
 
         alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
@@ -380,19 +436,30 @@ public class CreateActivity extends AppCompatActivity {
                 dialog.cancel();
             }
         });
+        alert.setNeutralButton("취소", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+        alert.setCancelable(false);
         alert.show();
     }
 
     public void createModel(){
         //이름 체크
         if(modelName.length() < 2){
-            Toast.makeText(getApplicationContext(), "이름이 너무 짧습니다.", Toast.LENGTH_SHORT).show();
+            AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
+            alert.setMessage("이름이 너무 짧아요.");
+            alert.show();
             return;
         }
         File path = new File(getFilesDir().getAbsolutePath() + "/models/" + modelName + ".obj");
 
         if(path.exists()){
-            Toast.makeText(getApplicationContext(), "이미 있는 이름입니다.", Toast.LENGTH_SHORT).show();
+            AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
+            alert.setMessage("이미 있는 이름이에요.");
+            alert.show();
             return;
         }
 
@@ -431,12 +498,10 @@ public class CreateActivity extends AppCompatActivity {
 
         //모델생성 완료 표시
         AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
-        alert.setTitle("모델 생성");
         alert.setMessage("모델 생성 완료!");
-
-        alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+        alert.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
-            public void onClick(DialogInterface dialog, int which) {
+            public void onDismiss(DialogInterface dialog) {
                 dialog.cancel();
                 Intent data = new Intent();
                 data.putExtra("modelname", modelName);
@@ -456,6 +521,12 @@ public class CreateActivity extends AppCompatActivity {
 
         Button button = (Button)findViewById(R.id.capture);
         button.setEnabled(true);
+
+        viewPager.addOnPageChangeListener(listener);
+        viewPager.setCurrentItem(mode);
+        LinearLayout tab = (LinearLayout) tabLayout.getChildAt(0);
+        tab.getChildAt(0).setOnTouchListener(enable_touch);
+        tab.getChildAt(1).setOnTouchListener(enable_touch);
     }
 
     private void setInit(){

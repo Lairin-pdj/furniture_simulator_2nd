@@ -1,4 +1,4 @@
-package com.example.cameratest;
+package com.example.cameratest.sub;
 
 public class FurnitureData {
     private String member_id;

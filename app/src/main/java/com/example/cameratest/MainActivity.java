@@ -16,7 +16,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Rect;
-import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -76,14 +75,18 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.bumptech.glide.request.RequestOptions;
+import com.example.cameratest.helper.DisplayRotationHelper;
+import com.example.cameratest.helper.TapHelper;
+import com.example.cameratest.helper.TrackingStateHelper;
 import com.example.cameratest.rendering.BackgroundRenderer;
 import com.example.cameratest.rendering.ObjectRenderer;
 import com.example.cameratest.rendering.PlaneRenderer;
@@ -341,8 +344,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         surfaceView.setOnTouchListener(tapHelper);
 
         // 초기튜토리얼 이미지 표시
-        ImageView imageView = findViewById(R.id.imageView);
+        ImageView imageView = findViewById(R.id.gif_plane_tutirial);
         imageView.bringToFront();
+        Glide.with(this).load(R.drawable.plane_tutorial).transform(new RoundedCorners(40)).into(imageView);
+        TextView textView = findViewById(R.id.gif_plane_tutirial_text);
+        textView.bringToFront();
 
         // 핀치줌 체크용
         scaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
@@ -587,9 +593,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         //초기 plane 탐지 전 이미지 보여주기
         if(!firstPlanecheck && hasTrackingPlane()){
-            ImageView imageView;
-            imageView = findViewById(R.id.imageView);
+            ImageView imageView = findViewById(R.id.gif_plane_tutirial);
             imageView.setVisibility(View.INVISIBLE);
+            TextView textView = findViewById(R.id.gif_plane_tutirial_text);
+            textView.setVisibility(View.INVISIBLE);
             firstPlanecheck = true;
         }
 
@@ -1386,6 +1393,13 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         public void onBindViewHolder(@NonNull ViewHolder holder, int position){
             String item = items.get(position);
             holder.setItem(item);
+        }
+
+        @Override
+        public void onViewAttachedToWindow(@NonNull ViewHolder holder) {
+            super.onViewAttachedToWindow(holder);
+            Animation animation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.recyclerview_zoom);
+            holder.itemView.startAnimation(animation);
         }
 
         public void addItem(String item){
@@ -2233,7 +2247,19 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void helpClick(View view){
-        Toast.makeText(getApplicationContext(), "도움말 기능은 준비 중 입니다.", Toast.LENGTH_SHORT).show();
+        // 도움말 액티비티로 이동
+        furnitureMenuClick(null);
+        Intent intent = new Intent(this, HelpActivity.class);
+
+        // 지연시간으로 애니메이션 효과 지속
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startActivityForResult(intent, 2);
+                overridePendingTransition(R.anim.activity_left_enter, R.anim.activity_left_exit);
+            }
+        }, 500);
     }
 
     public void captureClick(View view) throws InterruptedException {
@@ -2243,23 +2269,33 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         MediaActionSound sound = new MediaActionSound();
         sound.play(MediaActionSound.SHUTTER_CLICK);
 
-        saveCheck = true;
-        saveSucess = false;
+        Handler handler1 = new Handler();
+        handler1.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                saveCheck = true;
+                saveSucess = false;
+            }
+        }, 200);
 
-        // 콜백함수의 진행을 기다린 뒤 결과 출력
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
+        // 함수의 진행을 기다린 뒤 결과 출력
+        Handler handler2 = new Handler();
+        handler2.postDelayed(new Runnable() {
             @Override
             public void run() {
                 if(saveSucess){
-                    Toast.makeText(getApplicationContext(), "Screen Captured", Toast.LENGTH_SHORT).show();
+                    AlertDialog.Builder alert  = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
+                    alert.setMessage("촬영에 성공했어요.");
+                    alert.show();
                 }
                 else{
-                    Toast.makeText(getApplicationContext(), "Screen Capture failed", Toast.LENGTH_SHORT).show();
+                    AlertDialog.Builder alert  = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
+                    alert.setMessage("촬영에 실패했어요.");
+                    alert.show();
                 }
 
             }
-        }, 300);
+        }, 400);
     }
 
     public boolean screenShot(Bitmap bm){
@@ -2417,8 +2453,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                             break;
                     }
                     onPause();
+
                     recreate();
-                    firstPlanecheck = true;
                 }
                 if (isPlane != plane){
                     isPlane = plane;

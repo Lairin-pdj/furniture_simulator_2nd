@@ -6,12 +6,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Bundle;
@@ -29,7 +26,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -39,15 +35,15 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.animation.LayoutAnimationController;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
-import com.google.ar.core.Anchor;
+import com.example.cameratest.sub.FurnitureData;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,16 +51,13 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
-import java.net.ResponseCache;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.List;
 
 import de.javagl.obj.Obj;
 import de.javagl.obj.ObjReader;
@@ -138,7 +131,7 @@ public class DownloadActivity extends AppCompatActivity {
         // 데코레이터
         recyclerView = findViewById(R.id.download_list);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-        int spacing = 20;
+        int spacing = 30;
         boolean includeEdge = true;
         recyclerView.addItemDecoration(new GridSpacingItemDecoration(2, spacing, includeEdge));
 
@@ -405,6 +398,8 @@ public class DownloadActivity extends AppCompatActivity {
             }
 
             recyclerView.setAdapter(adapter);
+            LayoutAnimationController animationController = AnimationUtils.loadLayoutAnimation(DownloadActivity.this, R.anim.layout_animation_recyclerview);
+            recyclerView.setLayoutAnimation(animationController);
 
         } catch (JSONException e) {
             Log.d(TAG, "showResult : ", e);
@@ -741,6 +736,13 @@ public class DownloadActivity extends AppCompatActivity {
             View itemView = vi.inflate(R.layout.download_list_view, parent, false);
 
             return new ViewHolder(itemView);
+        }
+
+        @Override
+        public void onViewAttachedToWindow(@NonNull ViewHolder holder) {
+            super.onViewAttachedToWindow(holder);
+            Animation animation = AnimationUtils.loadAnimation(DownloadActivity.this, R.anim.recyclerview_zoom);
+            holder.itemView.startAnimation(animation);
         }
 
         @Override

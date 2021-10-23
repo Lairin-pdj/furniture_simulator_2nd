@@ -1,9 +1,12 @@
-package com.example.cameratest;
+package com.example.cameratest.sub;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
+
+import com.example.cameratest.sub.Fragment_2d;
+import com.example.cameratest.sub.Fragment_3d;
 
 import java.util.ArrayList;
 import java.util.List;
