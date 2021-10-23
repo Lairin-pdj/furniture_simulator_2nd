@@ -1,5 +1,7 @@
 # furniture_simulator_2nd
 furniture simulator by android studio(google ar core)
+</br>  
+</br>  
 
 ## 프로젝트 및 대략적인 기술 설명
 android studio을 이용하여 제작된 안드로이드 앱의 소스코드 전반입니다.   
@@ -17,7 +19,6 @@ aws을 이용하여 웹서버를 유지하고 서버를 통해 가구 데이터�
 </br>  
    
 ## 개발 진행 과정
-
 - 3rd weeks first commit (~ 21-09-19)
 1. 가구 삭제 버튼 추가
 2. 업로드, 다운로드 버튼 추가
