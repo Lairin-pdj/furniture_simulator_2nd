@@ -419,7 +419,6 @@ public class CreateActivity extends AppCompatActivity {
     public void checkOClick(View view){
         //이름 입력받기
         AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
-        alert.setTitle("모델 이름 설정");
         alert.setMessage("모델 이름을 정해주세요.");
 
         EditText name = new EditText(this);

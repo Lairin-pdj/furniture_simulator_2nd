@@ -197,7 +197,7 @@
             android:layout_height="450dp"
             android:layout_gravity="end|bottom"
             android:layout_marginBottom="260dp"
-            android:background="@drawable/half_corner_shape"
+            android:background="@drawable/left_corner_shape"
             android:visibility="invisible">
 
             <TextView
@@ -232,7 +232,7 @@
             android:layout_width="match_parent"
             android:layout_height="240dp"
             android:layout_gravity="bottom"
-            android:background="@color/white"
+            android:background="@drawable/top_corner_shape"
             android:visibility="invisible">
 
             <androidx.recyclerview.widget.RecyclerView

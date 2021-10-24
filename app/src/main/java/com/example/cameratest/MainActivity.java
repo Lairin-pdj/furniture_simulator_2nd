@@ -49,6 +49,7 @@ import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.core.view.GestureDetectorCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 // androidx 이전
@@ -64,6 +65,7 @@ import android.os.Message;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -83,7 +85,6 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.bumptech.glide.request.RequestOptions;
 import com.example.cameratest.helper.DisplayRotationHelper;
 import com.example.cameratest.helper.TapHelper;
 import com.example.cameratest.helper.TrackingStateHelper;
@@ -122,6 +123,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.IntBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -217,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
     private int selectedAnchor = -1; // 선택된 anchor의 순서값
     private final ArrayList<ColoredAnchor> anchors = new ArrayList<>();
-    private String togled = null;
+    private String selected = null;
     private ScaleGestureDetector scaleGestureDetector;
 
     // 업로드용 변수
@@ -226,6 +228,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     // UI구현을 위한 변수들
     public static MainActivity getInstance;
+    private GestureDetectorCompat detectorCompat;
     private RecyclerView recyclerView = null;
     private RecyclerView subRecyclerView = null;
     private static class subMenuData{
@@ -246,6 +249,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private boolean isSubDeco = false;
     private boolean isDel = false;
     private boolean isUpload = false;
+    private boolean isMode = false;
 
     // 설정관련 변수들
     SharedPreferences spref;
@@ -352,6 +356,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         // 핀치줌 체크용
         scaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
+
+        // fling 체크용
+        detectorCompat = new GestureDetectorCompat(this, new FlingListener());
 
         // AR 시작
         resumeARCore();
@@ -975,18 +982,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                         // Adding an Anchor tells ARCore that it should track this position in
                         // space. This anchor is created on the Plane to place the 3D model
                         // in the correct position relative both to the world and to the plane.
-                        if (togled != null) {
-                            if (togled.equals("tabletest")) {
-                                anchors.add(new ColoredAnchor(hit.createAnchor(), objColor, togled, 0.00001f));
-                            } else if (togled.equals("andy")) {
+                        if (selected != null) {
+                            if (selected.equals("tabletest")) {
+                                anchors.add(new ColoredAnchor(hit.createAnchor(), objColor, selected, 0.00001f));
+                            } else if (selected.equals("andy")) {
                                 objColor = new float[]{139.0f, 195.0f, 74.0f, 255.0f};
-                                anchors.add(new ColoredAnchor(hit.createAnchor(), objColor, togled, 1.0f));
+                                anchors.add(new ColoredAnchor(hit.createAnchor(), objColor, selected, 1.0f));
                             } else {
-                                anchors.add(new ColoredAnchor(hit.createAnchor(), objColor, togled, 1.0f));
+                                anchors.add(new ColoredAnchor(hit.createAnchor(), objColor, selected, 1.0f));
                             }
 
                             // 배치하고 선택 모델은 해제
-                            togled = null;
+                            selected = null;
                             selectPreview.setVisibility(View.INVISIBLE);
                         }
                         break;
@@ -1042,7 +1049,44 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     public boolean onTouchEvent(MotionEvent e){
         //액티비티 터치 체크를 위해
         scaleGestureDetector.onTouchEvent(e);
+        this.detectorCompat.onTouchEvent(e);
         return true;
+    }
+
+    private class FlingListener extends GestureDetector.SimpleOnGestureListener{
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            if (selected == null) {
+                if (Math.abs(velocityX) > Math.abs(velocityY)) {
+                    if (isUp) {
+                        if (velocityX > 0) {
+                            if (isSubmenu) {
+                                subMenuClick(null);
+                                Log.d(TAG, "Fling : Right");
+                            }
+                        } else if (velocityX < 0) {
+                            if (!isSubmenu) {
+                                subMenuClick(null);
+                                Log.d(TAG, "Fling : Left");
+                            }
+                        }
+                    }
+                } else {
+                    if (velocityY > 0) {
+                        if (isUp) {
+                            furnitureMenuClick(null);
+                            Log.d(TAG, "Fling : Down");
+                        }
+                    } else if (velocityY < 0) {
+                        if (!isUp) {
+                            furnitureMenuClick(null);
+                            Log.d(TAG, "Fling : Up");
+                        }
+                    }
+                }
+            }
+            return super.onFling(e1, e2, velocityX, velocityY);
+        }
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener{
@@ -1398,8 +1442,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         @Override
         public void onViewAttachedToWindow(@NonNull ViewHolder holder) {
             super.onViewAttachedToWindow(holder);
-            Animation animation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.recyclerview_zoom);
-            holder.itemView.startAnimation(animation);
+            if (!isMode) {
+                Animation animation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.recyclerview_zoom);
+                holder.itemView.startAnimation(animation);
+            }
         }
 
         public void addItem(String item){
@@ -1477,13 +1523,21 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                                 selectedAnchor = -1;
 
                                 //선택된 가구일 경우 제거
-                                if (togled != null && togled.equals(textView.getText())){
-                                    togled = null;
+                                if (selected != null && selected.equals(textView.getText())){
+                                    selected = null;
                                     selectPreview.setVisibility(View.INVISIBLE);
                                 }
 
                                 // 가구 목록의 변화가 있으므로 갱신
+                                isMode = true;
                                 setFurnitureList();
+                                Handler handler = new Handler();
+                                handler.postDelayed(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        isMode = false;
+                                    }
+                                }, 100);
 
                                 Toast.makeText(getApplicationContext(), "제거 완료", Toast.LENGTH_SHORT).show();
                                 dialog.cancel();
@@ -1541,7 +1595,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                         // 모드가 적용되지 않은 경우 가구 선택
                         if (!isDel && !isUpload) {
                             Toast.makeText(MainActivity.this, textView.getText(), Toast.LENGTH_SHORT).show();
-                            togled = textView.getText().toString();
+                            selected = textView.getText().toString();
                             textViewPreview.setText(textView.getText() + " 선택");
                             BitmapDrawable bd = (BitmapDrawable) imageButton.getDrawable();
                             Bitmap temp = bd.getBitmap();
@@ -1843,7 +1897,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
                 // 텍스트 데이터
                 wr.writeBytes("\r\n--" + boundary + "\r\n");
-                wr.writeBytes("Content-Disposition: form-data; name=\"name\"\r\n\r\n" + name);
+                wr.writeBytes("Content-Disposition: form-data; name=\"name\"\r\n\r\n" + URLEncoder.encode(name, "UTF-8"));
                 wr.writeBytes("\r\n--" + boundary + "\r\n");
 
 
@@ -2029,11 +2083,19 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         // 뷰 갱신 및 위치 고정
+        isMode = true;
         recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
         CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
         recyclerView.setAdapter(adapter);
         recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                isMode = false;
+            }
+        }, 100);
     }
 
     public void furDeleteClick(View view){
@@ -2058,11 +2120,19 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         // 뷰 갱신 및 위치 고정
+        isMode = true;
         recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
         CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
         recyclerView.setAdapter(adapter);
         recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                isMode = false;
+            }
+        }, 100);
     }
 
     public void subMenuClick(View view){
@@ -2092,6 +2162,16 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     public void furnitureMenuClick(View view){
         FrameLayout listView = (FrameLayout)findViewById(R.id.furniture_list_frame);
         listView.bringToFront();
+        // 스크롤 감지 고려 위치
+        /*
+        listView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });
+
+         */
 
         if(!isUp){
             //열기
@@ -2186,8 +2266,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 selectedAnchor = -1;
 
                 // 선택해제
-                if (togled != null){
-                    togled = null;
+                if (selected != null){
+                    selected = null;
                     selectPreview.setVisibility(View.INVISIBLE);
                 }
 
@@ -2228,8 +2308,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 selectedAnchor = -1;
 
                 // 선택해제
-                if (togled != null){
-                    togled = null;
+                if (selected != null){
+                    selected = null;
                     selectPreview.setVisibility(View.INVISIBLE);
                 }
 
@@ -2413,8 +2493,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 selectedAnchor = -1;
 
                 // 선택된 가구가 기본 모델이 아닌 경우 제거
-                if (togled != null && !Arrays.asList(strings).contains(togled)){
-                    togled = null;
+                if (selected != null && !Arrays.asList(strings).contains(selected)){
+                    selected = null;
                     selectPreview.setVisibility(View.INVISIBLE);
                 }
 
