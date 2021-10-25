@@ -1,6 +1,8 @@
 package com.example.cameratest;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -15,8 +17,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -48,37 +48,21 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.PermissionChecker;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.res.ResourcesCompat;
-import androidx.core.view.GestureDetectorCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-// androidx 이전
-//import android.support.annotation.NonNull;
-//import android.support.annotation.Nullable;
-//import android.support.v4.app.ActivityCompat;
-//import android.support.v4.content.PermissionChecker;
-//import android.support.v7.app.AlertDialog;
-//import android.support.v7.app.AppCompatActivity;
-//import android.support.v7.widget.LinearLayoutManager;
-//import android.support.v7.widget.RecyclerView;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
 import android.os.Message;
-import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.Surface;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
-import android.widget.Button;
+import android.view.animation.AccelerateInterpolator;
 import android.widget.FrameLayout;
-import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -93,6 +77,10 @@ import com.example.cameratest.rendering.ObjectRenderer;
 import com.example.cameratest.rendering.PlaneRenderer;
 import com.example.cameratest.rendering.PointCloudRenderer;
 import com.example.cameratest.rendering.ComplexObjectRenderer;
+import com.example.cameratest.sub.Empty;
+import com.example.cameratest.sub.Furniturelist;
+import com.example.cameratest.sub.FurniturelistButton;
+import com.example.cameratest.sub.Submenu;
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Camera;
@@ -109,8 +97,6 @@ import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
-//sceneform code
-//import com.google.ar.sceneform.ux.ArFragment;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -147,6 +133,8 @@ import de.javagl.obj.Obj;
 import de.javagl.obj.ObjReader;
 import de.javagl.obj.ObjWriter;
 
+import static com.example.cameratest.sub.Furniturelist.furniturelist;
+
 public class MainActivity extends AppCompatActivity implements GLSurfaceView.Renderer, ImageReader.OnImageAvailableListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -158,9 +146,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private boolean surfaceCreated;
 
     // 선택된 가구 보여주기용 view
-    private static FrameLayout selectPreview;
-    private static TextView textViewPreview;
-    private static ImageView imageViewPreview;
+    public static FrameLayout selectPreview;
+    public static TextView textViewPreview;
+    public static ImageView imageViewPreview;
 
     // 카메라 프리뷰 및 캡쳐를 위한 변수들
     private CameraDevice cameraDevice;
@@ -200,7 +188,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     // anchor용 변수들
     private final float[] anchorMatrix = new float[16];
     private static final float[] DEFAULT_COLOR = new float[] {0f, 0f, 0f, 0f};
-    private static class ColoredAnchor{
+    public static class ColoredAnchor{
         public Anchor anchor;
         public float[] color;
         public String name;
@@ -217,39 +205,30 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             this.selected = false;
         }
     }
-    private int selectedAnchor = -1; // 선택된 anchor의 순서값
-    private final ArrayList<ColoredAnchor> anchors = new ArrayList<>();
-    private String selected = null;
+    public int selectedAnchor = -1; // 선택된 anchor의 순서값
+    public final ArrayList<ColoredAnchor> anchors = new ArrayList<>();
+    public String selected = null;
     private ScaleGestureDetector scaleGestureDetector;
 
     // 업로드용 변수
     // 캡슐화 필요
-    private final static String IP_ADDRESS = "13.125.254.183";
+    public final static String IP_ADDRESS = "13.125.254.183";
 
     // UI구현을 위한 변수들
     public static MainActivity getInstance;
-    private GestureDetectorCompat detectorCompat;
-    private RecyclerView recyclerView = null;
-    private RecyclerView subRecyclerView = null;
-    private static class subMenuData{
-        public int picture;
-        public String name;
-        public String text;
-
-        public subMenuData(int picture, String name, String text) {
-            this.picture = picture;
-            this.name = name;
-            this.text = text;
-        }
-    }
-    private Parcelable recyclerViewState;
+    private ViewPager2 viewPagerFurniturelist;
+    private FragmentStateAdapter pagerAdapterFurniturelist;
+    private int oldDragPositionFur = 0;
+    private Animator furnitureAnimator = null;
+    private ViewPager2 viewPagerSubmenu;
+    private FragmentStateAdapter pagerAdapterSubmenu;
+    private int oldDragPositionSub = 0;
+    private Animator submenuAnimator = null;
     private boolean isUp = false;
     private boolean isSubmenu = false;
-    private boolean isDeco = false;
-    private boolean isSubDeco = false;
-    private boolean isDel = false;
-    private boolean isUpload = false;
-    private boolean isMode = false;
+    public boolean isDel = false;
+    public boolean isUpload = false;
+    public boolean isMode = false;
 
     // 설정관련 변수들
     SharedPreferences spref;
@@ -257,12 +236,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private boolean isTimer;
     private String whatFont;
     private boolean isPlane;
-
-    // 애니메이션 변수들
-    private Animation translate_up;
-    private Animation translate_down;
-    private Animation sub_up;
-    private Animation sub_down;
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
@@ -314,12 +287,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
-        // 애니메이션 변수 적용
-        translate_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_up);
-        translate_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.translate_down);
-        sub_up = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.sub_up);
-        sub_down = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.sub_down);
-
         // 내장 모델 내부저장소에 저장
         saveInternalModels();
 
@@ -357,21 +324,71 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         // 핀치줌 체크용
         scaleGestureDetector = new ScaleGestureDetector(this, new ScaleListener());
 
-        // fling 체크용
-        detectorCompat = new GestureDetectorCompat(this, new FlingListener());
-
         // AR 시작
         resumeARCore();
 
         // 선택된 가구 보여주는 뷰 초기화
         setFurniturePreview();
 
-        // 가구목록 셋팅
-        setFurnitureList();
-
         // 올리기
         ConstraintLayout constraintLayout = findViewById(R.id.layout_timebattery);
         constraintLayout.bringToFront();
+
+        // 가구목록 뷰페이저
+        viewPagerFurniturelist = findViewById(R.id.furniture_list_viewpager);
+        viewPagerFurniturelist.setOffscreenPageLimit(1);
+        pagerAdapterFurniturelist = new PagerAdapterFurniturelist(this);
+        viewPagerFurniturelist.setAdapter(pagerAdapterFurniturelist);
+        viewPagerFurniturelist.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                if (position == 0){
+                    isUp = false;
+                    viewPagerSubmenu.setUserInputEnabled(false);
+                    if (isSubmenu){
+                        subMenuClick(null);
+                    }
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (isDel){
+                                furDeleteClick(null);
+                            }
+                            if (isUpload){
+                                uploadClick(null);
+                            }
+                        }
+                    }, 500);
+                }
+                else{
+                    isUp = true;
+                    viewPagerSubmenu.setUserInputEnabled(true);
+                }
+            }
+        });
+        viewPagerFurniturelist.bringToFront();
+        viewPagerFurniturelist.setPageTransformer(new DepthPageTransformer());
+
+        // 서브메뉴 뷰페이저
+        viewPagerSubmenu = findViewById(R.id.submenu_viewpager);
+        viewPagerSubmenu.setOffscreenPageLimit(1);
+        pagerAdapterSubmenu = new PagerAdapterSubMenu(this);
+        viewPagerSubmenu.setAdapter(pagerAdapterSubmenu);
+        viewPagerSubmenu.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                if (position == 0){
+                    isSubmenu = false;
+                }
+                else{
+                    isSubmenu = true;
+                }
+            }
+        });
+        viewPagerSubmenu.setUserInputEnabled(false);
     }
 
     @Override
@@ -427,25 +444,23 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
 
         // 배터리 표시
+        FrameLayout layout_battary = findViewById(R.id.layout_battery);
         if (isBattery) {
-            FrameLayout frameLayout = findViewById(R.id.layout_battery);
-            frameLayout.setVisibility(View.VISIBLE);
+            layout_battary.setVisibility(View.VISIBLE);
             setBatteryTimer();
         }
         else{
-            FrameLayout frameLayout = findViewById(R.id.layout_battery);
-            frameLayout.setVisibility(View.GONE);
+            layout_battary.setVisibility(View.GONE);
         }
 
         // 시계 표시
+        FrameLayout layout_time = findViewById(R.id.layout_time);
         if (isTimer) {
-            FrameLayout frameLayout = findViewById(R.id.layout_time);
-            frameLayout.setVisibility(View.VISIBLE);
+            layout_time.setVisibility(View.VISIBLE);
             setTimeTimer();
         }
         else{
-            FrameLayout frameLayout = findViewById(R.id.layout_time);
-            frameLayout.setVisibility(View.GONE);
+            layout_time.setVisibility(View.GONE);
         }
     }
 
@@ -1049,44 +1064,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     public boolean onTouchEvent(MotionEvent e){
         //액티비티 터치 체크를 위해
         scaleGestureDetector.onTouchEvent(e);
-        this.detectorCompat.onTouchEvent(e);
         return true;
-    }
-
-    private class FlingListener extends GestureDetector.SimpleOnGestureListener{
-        @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            if (selected == null) {
-                if (Math.abs(velocityX) > Math.abs(velocityY)) {
-                    if (isUp) {
-                        if (velocityX > 0) {
-                            if (isSubmenu) {
-                                subMenuClick(null);
-                                Log.d(TAG, "Fling : Right");
-                            }
-                        } else if (velocityX < 0) {
-                            if (!isSubmenu) {
-                                subMenuClick(null);
-                                Log.d(TAG, "Fling : Left");
-                            }
-                        }
-                    }
-                } else {
-                    if (velocityY > 0) {
-                        if (isUp) {
-                            furnitureMenuClick(null);
-                            Log.d(TAG, "Fling : Down");
-                        }
-                    } else if (velocityY < 0) {
-                        if (!isUp) {
-                            furnitureMenuClick(null);
-                            Log.d(TAG, "Fling : Up");
-                        }
-                    }
-                }
-            }
-            return super.onFling(e1, e2, velocityX, velocityY);
-        }
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener{
@@ -1255,80 +1233,16 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public void setFurniturePreview(){
         //미리보기 세팅용 코드
-        selectPreview = (FrameLayout) findViewById(R.id.select_fur_preview);
-        textViewPreview = (TextView)findViewById(R.id.textView_preview);
-        imageViewPreview = (ImageView)findViewById(R.id.imageView_preview);
+        selectPreview = findViewById(R.id.select_fur_preview);
+        textViewPreview = findViewById(R.id.textView_preview);
+        imageViewPreview = findViewById(R.id.imageView_preview);
     }
 
-    public void setSubmenu(){
-        // 서브메뉴의 생성
-        subRecyclerView = findViewById(R.id.submenu_View);
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
-        subRecyclerView.setLayoutManager(layoutManager);
-
-        // 데코 적용
-        if (!isSubDeco) {
-            subRecyclerView.addItemDecoration(new MainActivity.DividingItemDecoration(2));
-            isSubDeco = true;
-        }
-
-        SubAdapter subAdapter = new SubAdapter(getApplicationContext());
-
-        subAdapter.addItem(new subMenuData(R.drawable.title2d, "Model Create", "가구 모델을 만들 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.download_icon, "Download", "서버에서 다양한 가구 모델을 받을 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.upload_icon, "Upload", "가구 모델을 서버로 올릴 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.del_icon, "Model Delete", "필요 없는 가구를 삭제할 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.setting_icon, "Settings", "여러가지 설정을 조절할 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.image_load_fail, "Help", "사용방법에 대한 설명을 확인 할 수 있습니다."));
-
-        subRecyclerView.setAdapter(subAdapter);
-    }
-
-    public void setFurnitureList(){
-        // 가구목록 생성
-        recyclerView = findViewById(R.id.furniture_list);
-
-        // 위치의 유지를 위해
-        boolean flag = false;
-        if (recyclerView.getLayoutManager() != null) {
-            recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
-            flag = true;
-        }
-
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
-        recyclerView.setLayoutManager(layoutManager);
-
-        // 데코레이터 적용
-        if (!isDeco) {
-            recyclerView.addItemDecoration(new MainActivity.SpacingItemDecoration(8));
-            isDeco = true;
-        }
-
-        CustomerAdapter adapter = new CustomerAdapter(getApplicationContext());
-
-        // 내부 저장소 파싱을 통해 모델 체크
-        File path = new File(getFilesDir().getAbsolutePath() + "/models");
-        File[] files = path.listFiles();
-        List<String> filenames = new ArrayList<>();
-        for(int i = 0; i < files.length; i++){
-            String temp = files[i].getName();
-            int idx = temp.lastIndexOf(".");
-            if(temp.substring(idx + 1).equals("obj")){
-                filenames.add(temp.substring(0, idx));
-            }
-        }
-
-        // 체크된 모델 가구목록에 삽입
-        for(int i = 0; i < filenames.size(); i++){
-            adapter.addItem(new String(filenames.get(i)));
-        }
-
-        // 가구 목록 적용
-        recyclerView.setAdapter(adapter);
-        if (flag) {
-            recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-        }
+    public void setSelectedFurniture(String text, Bitmap image){
+        selected = text;
+        textViewPreview.setText(text + " 선택");
+        imageViewPreview.setImageBitmap(image);
+        selectPreview.setVisibility(View.VISIBLE);
     }
 
     public void setBatteryTimer(){
@@ -1411,414 +1325,182 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         timer.schedule(battery, 0, 3000);
     }
 
-    public class CustomerAdapter extends RecyclerView.Adapter<CustomerAdapter.ViewHolder>{
-        ArrayList<String> items = new ArrayList<>();
-        Context context;
+    public class PagerAdapterFurniturelist extends FragmentStateAdapter {
 
-        public CustomerAdapter(Context context){
-            this.context = context;
-        }
+        List<Fragment> fragments = new ArrayList<>();
 
-        @Override
-        public int getItemCount(){
-            return items.size();
+        public PagerAdapterFurniturelist(@NonNull FragmentActivity fa) {
+            super(fa);
+            fragments.add(new FurniturelistButton());
+            fragments.add(new Furniturelist());
         }
 
         @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType){
-            LayoutInflater vi = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            View itemView = vi.inflate(R.layout.list_view, parent, false);
-
-            return new ViewHolder(itemView);
+        public Fragment createFragment(int position) {
+            return fragments.get(position);
         }
 
         @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position){
-            String item = items.get(position);
-            holder.setItem(item);
+        public int getItemCount() {
+            return fragments.size();
         }
+    }
 
-        @Override
-        public void onViewAttachedToWindow(@NonNull ViewHolder holder) {
-            super.onViewAttachedToWindow(holder);
-            if (!isMode) {
-                Animation animation = AnimationUtils.loadAnimation(MainActivity.this, R.anim.recyclerview_zoom);
-                holder.itemView.startAnimation(animation);
-            }
+    private void animatePagerTransitionFur(final boolean forward, int pageCount) {
+        if (furnitureAnimator != null){
+            furnitureAnimator.cancel();
         }
-
-        public void addItem(String item){
-            items.add(item);
+        furnitureAnimator = getPagerTransitionAnimationFur(forward, pageCount);
+        if (viewPagerFurniturelist.beginFakeDrag()) {    // checking that started drag correctly
+            furnitureAnimator.start();
         }
+    }
 
-        class ViewHolder extends RecyclerView.ViewHolder{
-            ImageButton imageButton;
-            Button delButton;
-            Button uploadButton;
-            TextView textView;
-
-            public ViewHolder(@NonNull View itemView){
-                super(itemView);
-
-                textView = (TextView)itemView.findViewById(R.id.textView);
-
-                // 폰트 적용
-                switch (whatFont){
-                    case "나눔R":
-                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundr));
-                        break;
-                    case "나눔B":
-                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundb));
-                        break;
-                    case "카페":
-                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.cafe24surround));
-                        break;
-                    case "에스코드":
-                        textView.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.scdream3));
-                        break;
-                }
-
-                // 삭제버튼
-                delButton = (Button)itemView.findViewById((R.id.delete));
-                if (isDel){
-                    delButton.setVisibility(View.VISIBLE);
-                }
-                else{
-                    delButton.setVisibility(View.INVISIBLE);
-                }
-                delButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
-                        alert.setTitle("가구 모델 삭제");
-                        alert.setMessage(textView.getText() + " 모델을 삭제하시겠습니까?");
-                        alert.setPositiveButton("제거", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                //제거 부분
-                                File path = new File(getFilesDir().getAbsolutePath() + "/models");
-                                File[] files = path.listFiles();
-
-                                // 목록에 있는 파일 중 해당하는 이름의 파일 삭제
-                                for(int i = 0; i < files.length; i++){
-                                    String temp = files[i].getName();
-                                    int idx = temp.lastIndexOf(".");
-                                    if (temp.substring(0, idx).equals(textView.getText())) {
-                                        files[i].delete();
-                                    }
-                                }
-
-                                //프리뷰 제거
-                                path = new File(getFilesDir().getAbsolutePath() + "/previews/" + textView.getText() + "preview.png");
-                                path.delete();
-
-                                // 이미 렌더링 되있는 앵커 제거
-                                for (int i = 0; i < anchors.size(); i++){
-                                    if (anchors.get(i).name.equals(textView.getText())){
-                                       anchors.remove(i);
-                                       i--;
-                                    }
-                                }
-                                selectedAnchor = -1;
-
-                                //선택된 가구일 경우 제거
-                                if (selected != null && selected.equals(textView.getText())){
-                                    selected = null;
-                                    selectPreview.setVisibility(View.INVISIBLE);
-                                }
-
-                                // 가구 목록의 변화가 있으므로 갱신
-                                isMode = true;
-                                setFurnitureList();
-                                Handler handler = new Handler();
-                                handler.postDelayed(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        isMode = false;
-                                    }
-                                }, 100);
-
-                                Toast.makeText(getApplicationContext(), "제거 완료", Toast.LENGTH_SHORT).show();
-                                dialog.cancel();
-                            }
-                        });
-                        alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.cancel();
-                            }
-                        });
-                        alert.show();
-                    }
-                });
-
-                // 업로드 버튼
-                uploadButton = (Button)itemView.findViewById((R.id.upload_check));
-                if (isUpload){
-                    uploadButton.setVisibility(View.VISIBLE);
-                }
-                else{
-                    uploadButton.setVisibility(View.INVISIBLE);
-                }
-                uploadButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
-                        alert.setTitle("가구 모델 업로드");
-                        alert.setMessage(textView.getText() + " 모델을 업로드하시겠습니까?");
-                        alert.setPositiveButton("업로드", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                // 업로드 진행
-                                UpData task = new UpData();
-                                task.execute("http://" + IP_ADDRESS + "/upload.php", textView.getText().toString());
-
-                                dialog.cancel();
-                            }
-                        });
-                        alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                dialog.cancel();
-                            }
-                        });
-                        alert.show();
-                    }
-                });
-
-                // 가구이미지
-                imageButton = (ImageButton)itemView.findViewById(R.id.button);
-                imageButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        // 모드가 적용되지 않은 경우 가구 선택
-                        if (!isDel && !isUpload) {
-                            Toast.makeText(MainActivity.this, textView.getText(), Toast.LENGTH_SHORT).show();
-                            selected = textView.getText().toString();
-                            textViewPreview.setText(textView.getText() + " 선택");
-                            BitmapDrawable bd = (BitmapDrawable) imageButton.getDrawable();
-                            Bitmap temp = bd.getBitmap();
-                            imageViewPreview.setImageBitmap(temp);
-                            selectPreview.setVisibility(View.VISIBLE);
-                            furnitureMenuClick(null);
-                        }
-                        // 업로드 모드일 경우
-                        else if (isUpload){
-                            // 기본 가구는 업로드하지 못하도록
-                            String [] strings = {"andy", "desk", "chair", "lamp"};
-
-                            if (!Arrays.asList(strings).contains(textView.getText())) {
-                                uploadButton.callOnClick();
-                            }
-                            else{
-                                Toast.makeText(MainActivity.this, "기본 모델은 업로드할 수 없습니다.", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                        // 삭제 모드일 경우
-                        else {
-                            // 기본 가구는 삭제하지 못하도록
-                            String [] strings = {"andy", "desk", "chair", "lamp"};
-
-                            if (!Arrays.asList(strings).contains(textView.getText())) {
-                                delButton.callOnClick();
-                            }
-                            else{
-                                Toast.makeText(MainActivity.this, "기본 모델은 삭제할 수 없습니다.", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    }
-                });
+    private Animator getPagerTransitionAnimationFur(final boolean forward, int pageCount) {
+        ValueAnimator animator = ValueAnimator.ofInt(0, viewPagerFurniturelist.getHeight() - 1);
+        animator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
             }
 
-            public void setItem(String item){
-                // 이름에 맞춰 파일 탐색 및 적용
-                File path = new File(getFilesDir().getAbsolutePath() + "/previews");
-                File[] files = path.listFiles();
-                InputStream is = null;
-                Bitmap bitmap;
-                try {
-                    File check = new File(path + "/" + item + "preview.png");
-                    if(check.exists()){
-                        is = new FileInputStream(check);
-                        bitmap = BitmapFactory.decodeStream(is);
-                        imageButton.setImageBitmap(bitmap);
-                    }else {
-                        imageButton.setImageResource(R.drawable.furniture_app_icon);
-                    }
-                }catch (IOException e){
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                viewPagerFurniturelist.endFakeDrag();
+            }
 
-                }
-                textView.setText(item);
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                viewPagerFurniturelist.endFakeDrag();
+            }
 
-                // 기본 모델은 지우거나 업로드할 수 없도록
-                String [] strings = {"andy", "desk", "chair", "lamp"};
-                delButton = (Button)itemView.findViewById((R.id.delete));
-                uploadButton = (Button)itemView.findViewById((R.id.upload_check));
-                if (Arrays.asList(strings).contains(textView.getText())) {
-                    delButton.setVisibility(View.INVISIBLE);
-                    uploadButton.setVisibility(View.INVISIBLE);
-                }
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+                viewPagerFurniturelist.endFakeDrag();
+                oldDragPositionFur = 0;
+                viewPagerFurniturelist.beginFakeDrag();
+            }
+        });
+
+        animator.setInterpolator(new AccelerateInterpolator());
+        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                int dragPosition = (Integer) animation.getAnimatedValue();
+                int dragOffset = dragPosition - oldDragPositionFur;
+                oldDragPositionFur = dragPosition;
+                viewPagerFurniturelist.fakeDragBy(dragOffset * (forward ? -1 : 1));
+            }
+        });
+
+        animator.setDuration(500 / pageCount); // remove divider if you want to make each transition have the same speed as single page transition
+        animator.setRepeatCount(pageCount);
+
+        return animator;
+    }
+
+    public class DepthPageTransformer implements ViewPager2.PageTransformer {
+
+        public void transformPage(View view, float position) {
+            int pageHeight = view.getHeight();
+
+            if (position < -1) { // [-Infinity,-1)
+                // This page is way off-screen to the left.
+                view.setAlpha(0f);
+
+            } else if (position <= 0) { // [-1,0]
+                // Counteract the default slide transition
+                view.setTranslationY(pageHeight * -position);
+                view.setTranslationZ(-1f);
+
+            } else if (position <= 1) { // (0,1]
+                view.setAlpha(1f);
+                view.setTranslationX(0f);
+                view.setTranslationZ(0f);
+                view.setScaleX(1f);
+                view.setScaleY(1f);
+
+            } else { // (1,+Infinity]
+                // This page is way off-screen to the right.
+                view.setAlpha(0f);
             }
         }
     }
 
-    public class SpacingItemDecoration extends RecyclerView.ItemDecoration {
-        // 주어진 숫자 만큼 공간을 띄워주는 데코레이터
-        private final int spacing;
+    public class PagerAdapterSubMenu extends FragmentStateAdapter {
 
-        public SpacingItemDecoration(int spacing) {
-            this.spacing = spacing;
-        }
+        List<Fragment> fragments = new ArrayList<>();
 
-        @Override
-        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-            int position = parent.getChildAdapterPosition(view); // item position
-
-            if (position != 0) {
-                outRect.left = spacing;
-            }
-        }
-    }
-
-    public class SubAdapter extends RecyclerView.Adapter<SubAdapter.ViewHolder>{
-        ArrayList<subMenuData> items = new ArrayList<>();
-        Context context;
-
-        public SubAdapter(Context context){
-            this.context = context;
-        }
-
-        @Override
-        public int getItemCount(){
-            return items.size();
+        public PagerAdapterSubMenu(@NonNull FragmentActivity fa) {
+            super(fa);
+            fragments.add(new Empty());
+            fragments.add(new Submenu());
         }
 
         @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType){
-            LayoutInflater vi = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            View itemView = vi.inflate(R.layout.submenu_view, parent, false);
-
-            return new ViewHolder(itemView);
+        public Fragment createFragment(int position) {
+            return fragments.get(position);
         }
 
         @Override
-        public void onBindViewHolder(@NonNull ViewHolder holder, int position){
-            subMenuData item = items.get(position);
-            holder.setItem(item);
-        }
-
-        public void addItem(subMenuData item){
-            items.add(item);
-        }
-
-        @Override
-        public void onViewAttachedToWindow(@NonNull ViewHolder holder) {
-            // marquee의 시작 시점
-            super.onViewAttachedToWindow(holder);
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    holder.text.setSelected(true);
-                }
-            }, 3000);
-        }
-
-        @Override
-        public void onViewDetachedFromWindow(@NonNull ViewHolder holder) {
-            // marquee의 종료 시점
-            super.onViewDetachedFromWindow(holder);
-            holder.text.setSelected(false);
-        }
-
-        class ViewHolder extends RecyclerView.ViewHolder{
-            FrameLayout line;
-            ImageView picture;
-            TextView name;
-            TextView text;
-
-            public ViewHolder(@NonNull View itemView){
-                super(itemView);
-
-                // 메뉴의 선택
-                line = (FrameLayout)itemView.findViewById(R.id.submenu_area);
-                line.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        String temp = name.getText().toString();
-                        switch (temp){
-                            case "Model Create":
-                                buttonCreateClick(null);
-                                break;
-                            case "Download":
-                                downloadClick(null);
-                                break;
-                            case "Upload":
-                                uploadClick(null);
-                                break;
-                            case "Model Delete":
-                                furDeleteClick(null);
-                                break;
-                            case "Settings":
-                                settingClick(null);
-                                break;
-                            case "Help":
-                                helpClick(null);
-                                break;
-                        }
-                    }
-                });
-                picture = (ImageView)itemView.findViewById(R.id.menu_image);
-                name = (TextView)itemView.findViewById(R.id.menu_name);
-                text = (TextView)itemView.findViewById(R.id.menu_text);
-
-                // 폰트 적용
-                switch (whatFont){
-                    case "나눔R":
-                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundr));
-                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundr));
-                        break;
-                    case "나눔B":
-                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundb));
-                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.nanumroundb));
-                        break;
-                    case "카페":
-                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.cafe24surround));
-                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.cafe24surround));
-                        break;
-                    case "에스코드":
-                        name.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.scdream3));
-                        text.setTypeface(ResourcesCompat.getFont(getApplicationContext(), R.font.scdream3));
-                        break;
-                }
-            }
-
-            public void setItem(subMenuData item){
-                picture.setImageResource(item.picture);
-                name.setText(item.name);
-                text.setText(item.text);
-            }
+        public int getItemCount() {
+            return fragments.size();
         }
     }
 
-    public class DividingItemDecoration extends RecyclerView.ItemDecoration {
-        // 주어진 숫자 만큼 공간을 띄워주는 데코레이터
-        private final int dividing;
-
-        public DividingItemDecoration(int dividing) {
-            this.dividing = dividing;
+    private void animatePagerTransitionSub(final boolean forward, int pageCount) {
+        if (submenuAnimator != null){
+            submenuAnimator.cancel();
         }
+        submenuAnimator = getPagerTransitionAnimationSub(forward, pageCount);
+        if (viewPagerSubmenu.beginFakeDrag()) {    // checking that started drag correctly
+            submenuAnimator.start();
+        }
+    }
 
-        @Override
-        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-            int position = parent.getChildAdapterPosition(view); // item position
-
-            if (position != 0) {
-                outRect.top = dividing;
+    private Animator getPagerTransitionAnimationSub(final boolean forward, int pageCount) {
+        ValueAnimator animator = ValueAnimator.ofInt(0, viewPagerSubmenu.getWidth() - 1);
+        animator.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animation) {
             }
-        }
+
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                viewPagerSubmenu.endFakeDrag();
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                viewPagerSubmenu.endFakeDrag();
+            }
+
+            @Override
+            public void onAnimationRepeat(Animator animation) {
+                viewPagerSubmenu.endFakeDrag();
+                oldDragPositionSub = 0;
+                viewPagerSubmenu.beginFakeDrag();
+            }
+        });
+
+        animator.setInterpolator(new AccelerateInterpolator());
+        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                int dragPosition = (Integer) animation.getAnimatedValue();
+                int dragOffset = dragPosition - oldDragPositionSub;
+                oldDragPositionSub = dragPosition;
+                viewPagerSubmenu.fakeDragBy(dragOffset * (forward ? -1 : 1));
+            }
+        });
+
+        animator.setDuration(500 / pageCount); // remove divider if you want to make each transition have the same speed as single page transition
+        animator.setRepeatCount(pageCount);
+
+        return animator;
     }
 
     private class UpData extends AsyncTask<String, Void, String> {
@@ -2084,11 +1766,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         // 뷰 갱신 및 위치 고정
         isMode = true;
-        recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
-        CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
+        furniturelist.recyclerViewState = furniturelist.recyclerView.getLayoutManager().onSaveInstanceState();
+        Furniturelist.CustomerAdapter adapter = (Furniturelist.CustomerAdapter)furniturelist.recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
-        recyclerView.setAdapter(adapter);
-        recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+        furniturelist.recyclerView.setAdapter(adapter);
+        furniturelist.recyclerView.getLayoutManager().onRestoreInstanceState(furniturelist.recyclerViewState);
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -2121,11 +1803,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         // 뷰 갱신 및 위치 고정
         isMode = true;
-        recyclerViewState = recyclerView.getLayoutManager().onSaveInstanceState();
-        CustomerAdapter adapter = (CustomerAdapter)recyclerView.getAdapter();
+        furniturelist.recyclerViewState = furniturelist.recyclerView.getLayoutManager().onSaveInstanceState();
+        Furniturelist.CustomerAdapter adapter = (Furniturelist.CustomerAdapter)furniturelist.recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
-        recyclerView.setAdapter(adapter);
-        recyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+        furniturelist.recyclerView.setAdapter(adapter);
+        furniturelist.recyclerView.getLayoutManager().onRestoreInstanceState(furniturelist.recyclerViewState);
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -2137,18 +1819,14 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public void subMenuClick(View view){
         // 서브 메뉴 클릭
-        FrameLayout submenu = (FrameLayout)findViewById(R.id.furniture_list_submenu);
         if (isSubmenu){
             isSubmenu = false;
-            submenu.setVisibility(View.GONE);
-            submenu.startAnimation(sub_down);
+            animatePagerTransitionSub(false, 1);
+
         }
         else {
             isSubmenu = true;
-            setSubmenu();
-            submenu.setVisibility(View.VISIBLE);
-            submenu.startAnimation(sub_up);
-
+            animatePagerTransitionSub(true, 1);
             // 모드 정리
             if (isDel){
                 furDeleteClick(null);
@@ -2160,29 +1838,25 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     }
 
     public void furnitureMenuClick(View view){
-        FrameLayout listView = (FrameLayout)findViewById(R.id.furniture_list_frame);
-        listView.bringToFront();
-        // 스크롤 감지 고려 위치
-        /*
-        listView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return false;
-            }
-        });
-
-         */
-
         if(!isUp){
             //열기
-            listView.setVisibility(View.VISIBLE);
-            listView.startAnimation(translate_up);
+            animatePagerTransitionFur(true, 1);
+            viewPagerSubmenu.setUserInputEnabled(true);
             isUp = true;
+
+            //선택 상태 유지를 막기위해 해제
+            if (selectedAnchor >= 0) {
+                anchors.get(selectedAnchor).selected = false;
+                selectedAnchor = -1;
+            }
+            if (selected != null){
+                selected = null;
+                selectPreview.setVisibility(View.INVISIBLE);
+            }
         }
         else{
             //닫기
-            listView.setVisibility(View.GONE);
-            listView.startAnimation(translate_down);
+            animatePagerTransitionFur(false, 1);
             if (isSubmenu){
                 subMenuClick(null);
             }
@@ -2198,13 +1872,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     }
                 }
             }, 500);
+            viewPagerSubmenu.setUserInputEnabled(false);
             isUp = false;
-        }
-
-        //선택 상태 유지를 막기위해 해제
-        if (selectedAnchor >= 0) {
-            anchors.get(selectedAnchor).selected = false;
-            selectedAnchor = -1;
         }
     }
 
@@ -2375,7 +2044,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
 
             }
-        }, 400);
+        }, 500);
     }
 
     public boolean screenShot(Bitmap bm){
@@ -2469,7 +2138,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         //모델생성 확인시 표시를 위해서
         if(requestCode == 0){
             if(resultCode == RESULT_OK) {
-                setFurnitureList();
+                furniturelist.setFurnitureList();
                 String newModel = data.getExtras().getString("modelname");
                 newModelName = newModel;
                 isNewModel = true;
@@ -2481,7 +2150,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 String [] strings = {"andy", "desk", "chair", "lamp"};
 
                 // 가구 목록 갱신
-                setFurnitureList();
+                furniturelist.setFurnitureList();
 
                 // 이미 렌더링 되있는 앵커 중 기본 모델 아닌 것 제거
                 for (int i = 0; i < anchors.size(); i++){

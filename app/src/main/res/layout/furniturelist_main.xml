@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/furniture_list_frame"
+    android:layout_width="match_parent"
+    android:layout_height="240dp"
+    android:layout_gravity="bottom"
+    android:background="@drawable/top_corner_shape">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/furniture_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="46dp"
+        android:background="#EEEEEE"
+        android:scrollbars="horizontal"
+        android:overScrollMode="never"/>
+
+    <Button
+        android:id="@+id/button_sub_menu"
+        android:layout_width="30dp"
+        android:layout_height="26dp"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="10dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/submenu_button"
+        android:onClick="subMenuClick" />
+
+    <ImageView
+        android:id="@+id/mode_icon"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="50dp"
+        android:layout_marginTop="8dp"
+        android:visibility="invisible"
+        android:onClick="modeIconClick"/>
+
+    <TextView
+        android:id="@+id/mode_text"
+        android:layout_width="100dp"
+        android:layout_height="26dp"
+        android:layout_gravity="end|top"
+        android:gravity="center_vertical|end"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="85dp"
+        android:text="mode :"
+        android:textColor="@color/black"
+        android:autoSizeMaxTextSize="100sp"
+        android:autoSizeMinTextSize="10sp"
+        android:autoSizeStepGranularity="2sp"
+        android:autoSizeTextType="uniform"
+        android:visibility="invisible"/>
+
+    <TextView
+        android:id="@+id/furniture_text"
+        android:layout_width="300dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center_horizontal|top"
+        android:gravity="center"
+        android:layout_marginTop="3dp"
+        android:text="가구목록"
+        android:textColor="@color/black"
+        android:autoSizeMaxTextSize="100sp"
+        android:autoSizeMinTextSize="10sp"
+        android:autoSizeStepGranularity="2sp"
+        android:autoSizeTextType="uniform"/>
+
+    <Button
+        android:id="@+id/button_furlist_exit"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="3dp"
+        android:background="@android:drawable/ic_menu_more"
+        android:onClick="furListExitClick" />
+
+</FrameLayout>
