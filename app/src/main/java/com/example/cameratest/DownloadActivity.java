@@ -432,9 +432,9 @@ public class DownloadActivity extends AppCompatActivity {
         protected void onPreExecute() {
             super.onPreExecute();
 
-            progressDialog = new ProgressDialog(DownloadActivity.this, R.style.Dialog);
+            progressDialog = new ProgressDialog(DownloadActivity.this, R.style.DialogSmall);
             progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            progressDialog.setMessage("가구 데이터를 받는 중입니다.");
+            progressDialog.setMessage("가구 데이터를 받는 중이에요.");
             progressDialog.setCancelable(false);
             progressDialog.setIndeterminate(true);
             progressDialog.show();

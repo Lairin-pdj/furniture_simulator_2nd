@@ -1,5 +1,7 @@
 package com.example.cameratest;
 
+import android.annotation.SuppressLint;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,16 +14,16 @@ import android.graphics.Color;
 import android.hardware.Camera;
 import android.media.MediaActionSound;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
-// androidx 이전
-//import android.support.v7.app.AlertDialog;
-//import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.View;
@@ -33,6 +35,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.cameratest.sub.CameraPreview;
 import com.example.cameratest.sub.PagerAdapter;
@@ -49,12 +52,16 @@ import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -207,19 +214,11 @@ public class CreateActivity extends AppCompatActivity {
             handler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    screenShot(bm);
+                    checkThings task = new checkThings();
+                    task.execute();
                     mCamera.setPreviewCallback(null);
                 }
-            }, 300);
-
-            //캡쳐버튼 비활성화
-            Button button = (Button) findViewById(R.id.capture);
-            button.setEnabled(false);
-
-            viewPager.removeOnPageChangeListener(listener);
-            LinearLayout tab = (LinearLayout) tabLayout.getChildAt(0);
-            tab.getChildAt(0).setOnTouchListener(disable_touch);
-            tab.getChildAt(1).setOnTouchListener(disable_touch);
+            }, 400);
         }
         else{
             AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
@@ -241,58 +240,122 @@ public class CreateActivity extends AppCompatActivity {
         super.onBackPressed();
     }
 
-    public void screenShot(Bitmap bm){
-        if(bm != null) {
-            openCVobjectCheck();
+    private class checkThings extends AsyncTask<String, Void, String> {
+        ProgressDialog progressDialog;
+        String errorString = null;
 
-            //자른 이미지까지 저장
-            Bitmap overlay = Bitmap.createBitmap(bm.getWidth(), bm.getHeight(), RGB_565);
-            Canvas canvas = new Canvas(overlay);
-            canvas.drawBitmap(bm, 0, 0, null);
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
 
-            //Bitmap overlayOb = Bitmap.createBitmap(cutBm.getWidth(), cutBm.getHeight(), RGB_565);
-            //Canvas canvasOb = new Canvas(overlayOb);
-            //canvasOb.drawBitmap(cutBm, 0, 0, null);
-
-            File path = new File(getFilesDir().getAbsolutePath() + "/TEMP");
-            //폴더 생성
-            if (!path.exists()) {
-                path.mkdirs();
-            }
-            try {
-                //파일 저장
-                FileOutputStream os = new FileOutputStream(path + "/temp.png");
-                overlay.compress(Bitmap.CompressFormat.PNG, 100, os);
-                os.close();
-
-                //FileOutputStream osOb = new FileOutputStream(path + "/tempObject.png");
-                //overlayOb.compress(Bitmap.CompressFormat.PNG, 100, osOb);
-                //osOb.close();
-            } catch (IOException e) {
-                Log.e("Save_Image", e.getMessage(), e);
-            }
-
-            //미디어 스캔
-            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-            intent.setData(Uri.fromFile(path));
-            sendBroadcast(intent);
-
-            //이미지 확인을 위한 표시
-            ImageView imageView = (ImageView)findViewById(R.id.objectdetect);
-            imageView.setImageBitmap(bm);
-
-            FrameLayout frameLayout = (FrameLayout)findViewById(R.id.objectpreview);
-            frameLayout.bringToFront();
-            frameLayout.setVisibility(View.VISIBLE);
+            progressDialog = new ProgressDialog(CreateActivity.this, R.style.DialogSmall);
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setMessage("사물을 인식하는 중이에요.");
+            progressDialog.setCancelable(false);
+            progressDialog.setIndeterminate(true);
+            progressDialog.show();
         }
-        else{
-            AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
-            alert.setMessage("촬영에 실패했어요.\n다시 시도해주세요.");
-            alert.show();
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            progressDialog.dismiss();
+            if (!result.equals("failed")) {
+                // 체크에 따른 표시
+                TextView textView = (TextView)findViewById(R.id.text_opencv_check);
+                Button button = (Button)findViewById(R.id.button_ok);
+
+                if (result.equals("success")){
+                    textView.setText("감지한 사물을 빨간색 네모로 표기했어요.");
+                    button.setVisibility(View.VISIBLE);
+                }
+                else{
+                    textView.setText("사물을 감지하지 못했어요. 다시 찍어주세요.");
+                    button.setVisibility(View.INVISIBLE);
+                }
+
+
+                //이미지 확인을 위한 표시
+                ImageView imageView = (ImageView)findViewById(R.id.objectdetect);
+                imageView.setImageBitmap(bm);
+
+                FrameLayout frameLayout = (FrameLayout)findViewById(R.id.objectpreview);
+                frameLayout.bringToFront();
+                frameLayout.setVisibility(View.VISIBLE);
+
+                bm = null;
+
+                //캡쳐버튼 비활성화
+                Button capturebutton = (Button) findViewById(R.id.capture);
+                capturebutton.setEnabled(false);
+
+                viewPager.removeOnPageChangeListener(listener);
+                LinearLayout tab = (LinearLayout) tabLayout.getChildAt(0);
+                tab.getChildAt(0).setOnTouchListener(disable_touch);
+                tab.getChildAt(1).setOnTouchListener(disable_touch);
+            }
+            else{
+                LayoutInflater inflater = getLayoutInflater();
+                View toastDesign = inflater.inflate(R.layout.toast, null);
+                TextView toastText = toastDesign.findViewById(R.id.toast_text);
+                toastText.setText("촬영에 실패했어요. 다시 시도해주세요.");
+                ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+                toastImage.setVisibility(View.GONE);
+                Toast toast = new Toast(getApplicationContext());
+                toast.setGravity(Gravity.BOTTOM, 0, 150);
+                toast.setDuration(Toast.LENGTH_SHORT);
+                toast.setView(toastDesign);
+                toast.show();
+            }
+        }
+
+        @Override
+        protected String doInBackground(String... params) {
+            if(bm != null) {
+                boolean temp = openCVobjectCheck();
+
+                //자른 이미지까지 저장
+                Bitmap overlay = Bitmap.createBitmap(bm.getWidth(), bm.getHeight(), RGB_565);
+                Canvas canvas = new Canvas(overlay);
+                canvas.drawBitmap(bm, 0, 0, null);
+
+                File path = new File(getFilesDir().getAbsolutePath() + "/TEMP");
+                //폴더 생성
+                if (!path.exists()) {
+                    path.mkdirs();
+                }
+                try {
+                    //파일 저장
+                    FileOutputStream os = new FileOutputStream(path + "/temp.png");
+                    overlay.compress(Bitmap.CompressFormat.PNG, 100, os);
+                    os.close();
+
+                    //FileOutputStream osOb = new FileOutputStream(path + "/tempObject.png");
+                    //overlayOb.compress(Bitmap.CompressFormat.PNG, 100, osOb);
+                    //osOb.close();
+                } catch (IOException e) {
+                    Log.e("Save_Image", e.getMessage(), e);
+                }
+
+                //미디어 스캔
+                Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                intent.setData(Uri.fromFile(path));
+                sendBroadcast(intent);
+
+                if (temp){
+                    return "success";
+                }
+                else{
+                    return "nothings";
+                }
+            }
+            else {
+                return "failed";
+            }
         }
     }
 
-    public void openCVobjectCheck(){
+    public boolean openCVobjectCheck(){
         // 이미지에서 사물인식
 
         // 이미지 형식 변환
@@ -357,8 +420,7 @@ public class CreateActivity extends AppCompatActivity {
         }
 
         // 감지 못한 경우 체크
-        TextView textView = (TextView)findViewById(R.id.text_opencv_check);
-        Button button = (Button)findViewById(R.id.button_ok);
+        boolean temp;
 
         //제일 큰 사각형  출력
         if(contoursRemoved.size()>0) {
@@ -385,15 +447,14 @@ public class CreateActivity extends AppCompatActivity {
                         , new Scalar(255, 0, 0), 5);
             }
 
-            textView.setText("감지한 사물을 빨간색 네모로 표기했어요.");
-            button.setVisibility(View.VISIBLE);
+            temp = true;
         }
         else {
-            textView.setText("사물을 감지하지 못했어요. 다시 찍어주세요.");
-            button.setVisibility(View.INVISIBLE);
+            temp = false;
         }
 
         Utils.matToBitmap(imageMat, bm);
+        return temp;
     }
 
     public boolean collisionCheck(Rect r1, Rect r2){
@@ -426,7 +487,7 @@ public class CreateActivity extends AppCompatActivity {
         name.setHighlightColor(Color.TRANSPARENT);
         alert.setView(name);
 
-        alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+        alert.setPositiveButton("결정", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 modelName = name.getText().toString();
@@ -448,17 +509,33 @@ public class CreateActivity extends AppCompatActivity {
     public void createModel(){
         //이름 체크
         if(modelName.length() < 2){
-            AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
-            alert.setMessage("이름이 너무 짧아요.");
-            alert.show();
+            LayoutInflater inflater = getLayoutInflater();
+            View toastDesign = inflater.inflate(R.layout.toast, null);
+            TextView toastText = toastDesign.findViewById(R.id.toast_text);
+            toastText.setText("이름이 너무 짧아요.");
+            ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+            toastImage.setVisibility(View.GONE);
+            Toast toast = new Toast(getApplicationContext());
+            toast.setGravity(Gravity.BOTTOM, 0, 150);
+            toast.setDuration(Toast.LENGTH_SHORT);
+            toast.setView(toastDesign);
+            toast.show();
             return;
         }
         File path = new File(getFilesDir().getAbsolutePath() + "/models/" + modelName + ".obj");
 
         if(path.exists()){
-            AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
-            alert.setMessage("이미 있는 이름이에요.");
-            alert.show();
+            LayoutInflater inflater = getLayoutInflater();
+            View toastDesign = inflater.inflate(R.layout.toast, null);
+            TextView toastText = toastDesign.findViewById(R.id.toast_text);
+            toastText.setText("이미 있는 이름이에요.");
+            ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+            toastImage.setVisibility(View.GONE);
+            Toast toast = new Toast(getApplicationContext());
+            toast.setGravity(Gravity.BOTTOM, 0, 150);
+            toast.setDuration(Toast.LENGTH_SHORT);
+            toast.setView(toastDesign);
+            toast.show();
             return;
         }
 
@@ -497,11 +574,18 @@ public class CreateActivity extends AppCompatActivity {
 
         //모델생성 완료 표시
         AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
-        alert.setMessage("모델 생성 완료!");
+        alert.setTitle("모델 생성");
+        alert.setMessage("모델 생성을 성공적으로 완료했어요.");
+        alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
         alert.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
-                dialog.cancel();
+                //화면 전환
                 Intent data = new Intent();
                 data.putExtra("modelname", modelName);
                 setResult(RESULT_OK, data);

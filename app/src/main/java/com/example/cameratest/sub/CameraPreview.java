@@ -8,14 +8,11 @@ import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-// androidx 이전
-//import android.support.v7.app.AlertDialog;
-import android.hardware.camera2.CameraDevice;
+
 import android.util.AttributeSet;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.widget.Toast;
 
 import com.example.cameratest.CreateActivity;
 import com.example.cameratest.MainActivity;

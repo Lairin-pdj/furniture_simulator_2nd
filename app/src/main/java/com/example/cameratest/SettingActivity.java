@@ -5,9 +5,13 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
@@ -75,18 +79,58 @@ public class SettingActivity extends AppCompatActivity {
             switch (key){
                 case "battery":
                     if (pref.getBoolean("battery", true)){
-                        Toast.makeText(getApplicationContext(), "배터리 켜기", Toast.LENGTH_SHORT).show();
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("배터리 표시 켜기");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getApplicationContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                     else{
-                        Toast.makeText(getApplicationContext(), "배터리 끄기", Toast.LENGTH_SHORT).show();
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("배터리 표시 끄기");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getApplicationContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                     break;
                 case "timer":
                     if (pref.getBoolean("timer", true)){
-                        Toast.makeText(getApplicationContext(), "시계 켜기", Toast.LENGTH_SHORT).show();
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("시계 표시 켜기");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getApplicationContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                     else{
-                        Toast.makeText(getApplicationContext(), "시계 끄기", Toast.LENGTH_SHORT).show();
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("시계 표시 끄기");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getApplicationContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                     break;
                 case "font":
@@ -116,10 +160,30 @@ public class SettingActivity extends AppCompatActivity {
                     break;
                 case "plane":
                     if (pref.getBoolean("plane", true)){
-                        Toast.makeText(getApplicationContext(), "바닥 켜기", Toast.LENGTH_SHORT).show();
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("바닥 표시 켜기");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getApplicationContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                     else{
-                        Toast.makeText(getApplicationContext(), "바닥 끄기", Toast.LENGTH_SHORT).show();
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("바닥 표시 끄기");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getApplicationContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                     break;
             }

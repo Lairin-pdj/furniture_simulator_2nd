@@ -3,10 +3,14 @@ package com.example.cameratest.sub;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
-import androidx.preference.DialogPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
@@ -25,7 +29,7 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
         setPreferencesFromResource(R.xml.settings, rootKey);
         Preference font = (Preference)findPreference("font");
         pref = PreferenceManager.getDefaultSharedPreferences(getContext());
-        font.setSummary(pref.getString("font", "기본") + "\n \n폰트 변경시 화면 갱신으로 인한 깜빡임이 발생할 수 있습니다.");
+        font.setSummary(pref.getString("font", "기본"));
     }
 
     @Override
@@ -35,24 +39,39 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
             case "cache":
                 AlertDialog.Builder alert = new AlertDialog.Builder(getContext(), R.style.Dialog);
                 alert.setTitle("캐시 및 임시 데이터 삭제");
-                alert.setMessage("앱의 캐시와 임시 데이터를 전부 삭제합니다.");
+                alert.setMessage("앱의 캐시와 임시 데이터를 전부 삭제할까요?");
                 alert.setPositiveButton("삭제", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         //캐시 삭제
                         File path = new File(getContext().getCacheDir().getAbsolutePath());
-                        setDirEmpty(path);
+                        if (path.exists()) {
+                            setDirEmpty(path);
+                        }
 
                         //임시데이터 삭제
                         path = new File(getContext().getFilesDir().getAbsolutePath() + "/TEMP");
-                        File[] files = path.listFiles();
+                        if (path.exists()) {
+                            File[] files = path.listFiles();
 
-                        for (File file : files){
-                            file.delete();
+                            for (File file : files) {
+                                file.delete();
+                            }
                         }
 
                         dialog.cancel();
-                        Toast.makeText(getContext(), "캐시 삭제 완료", Toast.LENGTH_SHORT).show();
+
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("캐시 삭제 완료");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                 });
                 alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
@@ -66,7 +85,7 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
             case "data":
                 alert = new AlertDialog.Builder(getContext(), R.style.Dialog);
                 alert.setTitle("가구 데이터 삭제");
-                alert.setMessage("기본 가구를 제외한 가구 데이터를 전부 삭제합니다.");
+                alert.setMessage("기본 가구를 제외한 가구 데이터를 전부 삭제할까요?");
                 alert.setPositiveButton("삭제", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -100,7 +119,18 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
                         }
 
                         dialog.cancel();
-                        Toast.makeText(getContext(), "가구 데이터 삭제 완료", Toast.LENGTH_SHORT).show();
+
+                        LayoutInflater inflater = getLayoutInflater();
+                        View toastDesign = inflater.inflate(R.layout.toast, null);
+                        TextView text = toastDesign.findViewById(R.id.toast_text);
+                        text.setText("가구 데이터 삭제 완료");
+                        ImageView image = toastDesign.findViewById(R.id.toast_image);
+                        image.setVisibility(View.GONE);
+                        Toast toast = new Toast(getContext());
+                        toast.setGravity(Gravity.BOTTOM, 0, 150);
+                        toast.setDuration(Toast.LENGTH_SHORT);
+                        toast.setView(toastDesign);
+                        toast.show();
                     }
                 });
                 alert.setNegativeButton("취소", new DialogInterface.OnClickListener() {
@@ -116,14 +146,15 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
     }
 
     public void setDirEmpty(File path){
-        File[] files = path.listFiles();
+        if (path.exists()) {
+            File[] files = path.listFiles();
 
-        for(File child : files){
-            if (child.isDirectory()){
-                setDirEmpty(new File(child.getAbsolutePath()));
-            }
-            else{
-                child.delete();
+            for (File child : files) {
+                if (child.isDirectory()) {
+                    setDirEmpty(new File(child.getAbsolutePath()));
+                } else {
+                    child.delete();
+                }
             }
         }
     }

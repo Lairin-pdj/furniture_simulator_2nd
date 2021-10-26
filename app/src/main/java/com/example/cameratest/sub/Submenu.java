@@ -54,12 +54,12 @@ public class Submenu extends Fragment {
 
         SubAdapter subAdapter = new SubAdapter(getContext());
 
-        subAdapter.addItem(new subMenuData(R.drawable.title2d, "Model Create", "가구 모델을 만들 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.create_icon, "Model Create", "가구 모델을 만들 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.download_icon, "Download", "서버에서 다양한 가구 모델을 받을 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.upload_icon, "Upload", "가구 모델을 서버로 올릴 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.del_icon, "Model Delete", "필요 없는 가구를 삭제할 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.setting_icon, "Settings", "여러가지 설정을 조절할 수 있습니다."));
-        subAdapter.addItem(new subMenuData(R.drawable.image_load_fail, "Help", "사용방법에 대한 설명을 확인 할 수 있습니다."));
+        subAdapter.addItem(new subMenuData(R.drawable.help_icon, "Help", "사용방법에 대한 설명을 확인 할 수 있습니다."));
 
         subRecyclerView.setAdapter(subAdapter);
 

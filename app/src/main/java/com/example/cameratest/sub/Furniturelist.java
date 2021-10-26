@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Parcelable;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,18 +20,17 @@ import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.cameratest.MainActivity;
 import com.example.cameratest.R;
 
 import java.io.BufferedReader;
@@ -179,7 +179,7 @@ public class Furniturelist extends Fragment {
                     public void onClick(View v) {
                         AlertDialog.Builder alert = new AlertDialog.Builder(getContext(), R.style.Dialog);
                         alert.setTitle("가구 모델 삭제");
-                        alert.setMessage(textView.getText() + " 모델을 삭제하시겠습니까?");
+                        alert.setMessage(textView.getText() + " 모델을 삭제할까요?");
                         alert.setPositiveButton("제거", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -226,7 +226,20 @@ public class Furniturelist extends Fragment {
                                     }
                                 }, 100);
 
-                                Toast.makeText(getContext(), "제거 완료", Toast.LENGTH_SHORT).show();
+                                BitmapDrawable bd = (BitmapDrawable) imageButton.getDrawable();
+                                Bitmap temp = bd.getBitmap();
+
+                                LayoutInflater inflater = getLayoutInflater();
+                                View toastDesign = inflater.inflate(R.layout.toast, null);
+                                TextView text = toastDesign.findViewById(R.id.toast_text);
+                                text.setText(textView.getText() + " 모델을 성공적으로 제거했어요.");
+                                ImageView image = toastDesign.findViewById(R.id.toast_image);
+                                image.setImageBitmap(temp);
+                                Toast toast = new Toast(getContext());
+                                toast.setGravity(Gravity.BOTTOM, 0, 150);
+                                toast.setDuration(Toast.LENGTH_SHORT);
+                                toast.setView(toastDesign);
+                                toast.show();
                                 dialog.cancel();
                             }
                         });
@@ -253,7 +266,7 @@ public class Furniturelist extends Fragment {
                     public void onClick(View v) {
                         AlertDialog.Builder alert = new AlertDialog.Builder(getContext(), R.style.Dialog);
                         alert.setTitle("가구 모델 업로드");
-                        alert.setMessage(textView.getText() + " 모델을 업로드하시겠습니까?");
+                        alert.setMessage(textView.getText() + " 모델을 업로드할까요?");
                         alert.setPositiveButton("업로드", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
@@ -281,9 +294,21 @@ public class Furniturelist extends Fragment {
                     public void onClick(View v) {
                         // 모드가 적용되지 않은 경우 가구 선택
                         if (!getInstance.isDel && !getInstance.isUpload) {
-                            Toast.makeText(getContext(), textView.getText(), Toast.LENGTH_SHORT).show();
                             BitmapDrawable bd = (BitmapDrawable) imageButton.getDrawable();
                             Bitmap temp = bd.getBitmap();
+
+                            LayoutInflater inflater = getLayoutInflater();
+                            View toastDesign = inflater.inflate(R.layout.toast, null);
+                            TextView text = toastDesign.findViewById(R.id.toast_text);
+                            text.setText(textView.getText() + " 모델이 선택되었어요.");
+                            ImageView image = toastDesign.findViewById(R.id.toast_image);
+                            image.setImageBitmap(temp);
+                            Toast toast = new Toast(getContext());
+                            toast.setGravity(Gravity.BOTTOM, 0, 150);
+                            toast.setDuration(Toast.LENGTH_SHORT);
+                            toast.setView(toastDesign);
+                            toast.show();
+
                             getInstance.setSelectedFurniture(textView.getText().toString(), temp);
                             getInstance.furnitureMenuClick(null);
                         }
@@ -296,7 +321,17 @@ public class Furniturelist extends Fragment {
                                 uploadButton.callOnClick();
                             }
                             else{
-                                Toast.makeText(getContext(), "기본 모델은 업로드할 수 없습니다.", Toast.LENGTH_SHORT).show();
+                                LayoutInflater inflater = getLayoutInflater();
+                                View toastDesign = inflater.inflate(R.layout.toast, null);
+                                TextView text = toastDesign.findViewById(R.id.toast_text);
+                                text.setText("기본 모델은 업로드할 수 없어요.");
+                                ImageView image = toastDesign.findViewById(R.id.toast_image);
+                                image.setVisibility(View.GONE);
+                                Toast toast = new Toast(getContext());
+                                toast.setGravity(Gravity.BOTTOM, 0, 150);
+                                toast.setDuration(Toast.LENGTH_SHORT);
+                                toast.setView(toastDesign);
+                                toast.show();
                             }
                         }
                         // 삭제 모드일 경우
@@ -308,7 +343,17 @@ public class Furniturelist extends Fragment {
                                 delButton.callOnClick();
                             }
                             else{
-                                Toast.makeText(getContext(), "기본 모델은 삭제할 수 없습니다.", Toast.LENGTH_SHORT).show();
+                                LayoutInflater inflater = getLayoutInflater();
+                                View toastDesign = inflater.inflate(R.layout.toast, null);
+                                TextView text = toastDesign.findViewById(R.id.toast_text);
+                                text.setText("기본 모델은 삭제할 수 없어요.");
+                                ImageView image = toastDesign.findViewById(R.id.toast_image);
+                                image.setVisibility(View.GONE);
+                                Toast toast = new Toast(getContext());
+                                toast.setGravity(Gravity.BOTTOM, 0, 150);
+                                toast.setDuration(Toast.LENGTH_SHORT);
+                                toast.setView(toastDesign);
+                                toast.show();
                             }
                         }
                     }
@@ -373,9 +418,9 @@ public class Furniturelist extends Fragment {
         protected void onPreExecute() {
             super.onPreExecute();
 
-            progressDialog = new ProgressDialog(getContext(), R.style.Dialog);
+            progressDialog = new ProgressDialog(getContext(), R.style.DialogSmall);
             progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            progressDialog.setMessage("가구 데이터를 받는 중입니다.");
+            progressDialog.setMessage("가구 데이터를 보내는 중이에요.");
             progressDialog.setCancelable(false);
             progressDialog.setIndeterminate(true);
             progressDialog.show();

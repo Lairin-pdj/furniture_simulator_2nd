@@ -4,7 +4,6 @@ import android.Manifest;
 import android.animation.Animator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,6 +16,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -33,7 +33,6 @@ import android.opengl.GLES20;
 import android.opengl.GLException;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
-import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -41,20 +40,12 @@ import android.os.ConditionVariable;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.PermissionChecker;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
-import androidx.viewpager2.adapter.FragmentStateAdapter;
-import androidx.viewpager2.widget.ViewPager2;
 import android.os.Message;
+import android.os.PersistableBundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.Surface;
@@ -67,16 +58,28 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.PermissionChecker;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.viewpager2.adapter.FragmentStateAdapter;
+import androidx.viewpager2.widget.ViewPager2;
+
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.example.cameratest.helper.DisplayRotationHelper;
 import com.example.cameratest.helper.TapHelper;
 import com.example.cameratest.helper.TrackingStateHelper;
 import com.example.cameratest.rendering.BackgroundRenderer;
+import com.example.cameratest.rendering.ComplexObjectRenderer;
 import com.example.cameratest.rendering.ObjectRenderer;
 import com.example.cameratest.rendering.PlaneRenderer;
 import com.example.cameratest.rendering.PointCloudRenderer;
-import com.example.cameratest.rendering.ComplexObjectRenderer;
 import com.example.cameratest.sub.Empty;
 import com.example.cameratest.sub.Furniturelist;
 import com.example.cameratest.sub.FurniturelistButton;
@@ -98,18 +101,11 @@ import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.IntBuffer;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -229,6 +225,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     public boolean isDel = false;
     public boolean isUpload = false;
     public boolean isMode = false;
+    private boolean isFirst = true;
 
     // 설정관련 변수들
     SharedPreferences spref;
@@ -280,6 +277,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         super.onCreate(savedInstanceState);
+        if (savedInstanceState != null){
+            isFirst = savedInstanceState.getBoolean("first", true);
+        }
         getInstance = this;
 
         // 풀스크린 적용
@@ -335,60 +335,26 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         constraintLayout.bringToFront();
 
         // 가구목록 뷰페이저
-        viewPagerFurniturelist = findViewById(R.id.furniture_list_viewpager);
-        viewPagerFurniturelist.setOffscreenPageLimit(1);
-        pagerAdapterFurniturelist = new PagerAdapterFurniturelist(this);
-        viewPagerFurniturelist.setAdapter(pagerAdapterFurniturelist);
-        viewPagerFurniturelist.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
-                if (position == 0){
-                    isUp = false;
-                    viewPagerSubmenu.setUserInputEnabled(false);
-                    if (isSubmenu){
-                        subMenuClick(null);
-                    }
-                    Handler handler = new Handler();
-                    handler.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (isDel){
-                                furDeleteClick(null);
-                            }
-                            if (isUpload){
-                                uploadClick(null);
-                            }
-                        }
-                    }, 500);
-                }
-                else{
-                    isUp = true;
-                    viewPagerSubmenu.setUserInputEnabled(true);
-                }
-            }
-        });
-        viewPagerFurniturelist.bringToFront();
-        viewPagerFurniturelist.setPageTransformer(new DepthPageTransformer());
+        setViewPagerFurniturelist();
 
         // 서브메뉴 뷰페이저
-        viewPagerSubmenu = findViewById(R.id.submenu_viewpager);
-        viewPagerSubmenu.setOffscreenPageLimit(1);
-        pagerAdapterSubmenu = new PagerAdapterSubMenu(this);
-        viewPagerSubmenu.setAdapter(pagerAdapterSubmenu);
-        viewPagerSubmenu.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
-                if (position == 0){
-                    isSubmenu = false;
-                }
-                else{
-                    isSubmenu = true;
-                }
-            }
-        });
-        viewPagerSubmenu.setUserInputEnabled(false);
+        setViewPagerSubmenu();
+
+        // 환영인사
+        if (isFirst) {
+            LayoutInflater inflater = getLayoutInflater();
+            View toastDesign = inflater.inflate(R.layout.toast, null);
+            TextView toastText = toastDesign.findViewById(R.id.toast_text);
+            toastText.setText("가구 시뮬레이터에 오신걸 환영해요!");
+            ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+            toastImage.setImageResource(R.drawable.main_character);
+            Toast toast = new Toast(getApplicationContext());
+            toast.setGravity(Gravity.BOTTOM, 0, 150);
+            toast.setDuration(Toast.LENGTH_LONG);
+            toast.setView(toastDesign);
+            toast.show();
+            isFirst = false;
+        }
     }
 
     @Override
@@ -401,7 +367,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 switch (ArCoreApk.getInstance().requestInstall(this, mUserRequestInstall)) {
                     case INSTALLED:
                         mSession = new Session(this);
-                        //Toast.makeText(this, "session created", Toast.LENGTH_SHORT).show();
                         break;
                     case INSTALL_REQUESTED:
                         mUserRequestInstall = false;
@@ -786,7 +751,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             case UNKNOWN_TIMED_OUT:
                 AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
                 alert.setTitle("ARCore 연결 실패");
-                alert.setMessage("인터넷 연결을 확인해주시거나 잠시 후에 다시 시도해주시길 바랍니다.");
+                alert.setMessage("인터넷 연결을 확인해주시거나 잠시 후에 다시 시도해주세요.");
                 alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -1245,6 +1210,64 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         selectPreview.setVisibility(View.VISIBLE);
     }
 
+    public void setViewPagerFurniturelist(){
+        viewPagerFurniturelist = findViewById(R.id.furniture_list_viewpager);
+        viewPagerFurniturelist.setOffscreenPageLimit(1);
+        pagerAdapterFurniturelist = new PagerAdapterFurniturelist(this);
+        viewPagerFurniturelist.setAdapter(pagerAdapterFurniturelist);
+        viewPagerFurniturelist.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                if (position == 0){
+                    isUp = false;
+                    viewPagerSubmenu.setUserInputEnabled(false);
+                    if (isSubmenu){
+                        subMenuClick(null);
+                    }
+                    Handler handler = new Handler();
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (isDel){
+                                furDeleteClick(null);
+                            }
+                            if (isUpload){
+                                uploadClick(null);
+                            }
+                        }
+                    }, 500);
+                }
+                else{
+                    isUp = true;
+                    viewPagerSubmenu.setUserInputEnabled(true);
+                }
+            }
+        });
+        viewPagerFurniturelist.bringToFront();
+        viewPagerFurniturelist.setPageTransformer(new DepthPageTransformer());
+    }
+
+    public void setViewPagerSubmenu(){
+        viewPagerSubmenu = findViewById(R.id.submenu_viewpager);
+        viewPagerSubmenu.setOffscreenPageLimit(1);
+        pagerAdapterSubmenu = new PagerAdapterSubMenu(this);
+        viewPagerSubmenu.setAdapter(pagerAdapterSubmenu);
+        viewPagerSubmenu.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+                if (position == 0){
+                    isSubmenu = false;
+                }
+                else{
+                    isSubmenu = true;
+                }
+            }
+        });
+        viewPagerSubmenu.setUserInputEnabled(false);
+    }
+
     public void setBatteryTimer(){
         // 순서 재조정
         TextView textView = findViewById(R.id.textView_battery);
@@ -1347,21 +1370,22 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
     }
 
-    private void animatePagerTransitionFur(final boolean forward, int pageCount) {
+    private void animatePagerTransitionFur(final boolean forward) {
         if (furnitureAnimator != null){
             furnitureAnimator.cancel();
         }
-        furnitureAnimator = getPagerTransitionAnimationFur(forward, pageCount);
-        if (viewPagerFurniturelist.beginFakeDrag()) {    // checking that started drag correctly
+        furnitureAnimator = getPagerTransitionAnimationFur(forward);
+        if (viewPagerFurniturelist.beginFakeDrag()) {
             furnitureAnimator.start();
         }
     }
 
-    private Animator getPagerTransitionAnimationFur(final boolean forward, int pageCount) {
+    private Animator getPagerTransitionAnimationFur(final boolean forward) {
         ValueAnimator animator = ValueAnimator.ofInt(0, viewPagerFurniturelist.getHeight() - 1);
         animator.addListener(new Animator.AnimatorListener() {
             @Override
             public void onAnimationStart(Animator animation) {
+                viewPagerFurniturelist.beginFakeDrag();
             }
 
             @Override
@@ -1376,9 +1400,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
             @Override
             public void onAnimationRepeat(Animator animation) {
-                viewPagerFurniturelist.endFakeDrag();
-                oldDragPositionFur = 0;
-                viewPagerFurniturelist.beginFakeDrag();
             }
         });
 
@@ -1394,8 +1415,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             }
         });
 
-        animator.setDuration(500 / pageCount); // remove divider if you want to make each transition have the same speed as single page transition
-        animator.setRepeatCount(pageCount);
+        animator.setDuration(500);
 
         return animator;
     }
@@ -1450,17 +1470,17 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
     }
 
-    private void animatePagerTransitionSub(final boolean forward, int pageCount) {
+    private void animatePagerTransitionSub(final boolean forward) {
         if (submenuAnimator != null){
             submenuAnimator.cancel();
         }
-        submenuAnimator = getPagerTransitionAnimationSub(forward, pageCount);
+        submenuAnimator = getPagerTransitionAnimationSub(forward);
         if (viewPagerSubmenu.beginFakeDrag()) {    // checking that started drag correctly
             submenuAnimator.start();
         }
     }
 
-    private Animator getPagerTransitionAnimationSub(final boolean forward, int pageCount) {
+    private Animator getPagerTransitionAnimationSub(final boolean forward) {
         ValueAnimator animator = ValueAnimator.ofInt(0, viewPagerSubmenu.getWidth() - 1);
         animator.addListener(new Animator.AnimatorListener() {
             @Override
@@ -1497,214 +1517,16 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             }
         });
 
-        animator.setDuration(500 / pageCount); // remove divider if you want to make each transition have the same speed as single page transition
-        animator.setRepeatCount(pageCount);
+        animator.setDuration(500);
 
         return animator;
-    }
-
-    private class UpData extends AsyncTask<String, Void, String> {
-        ProgressDialog progressDialog;
-        String errorString = null;
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            progressDialog = new ProgressDialog(MainActivity.this, R.style.Dialog);
-            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-            progressDialog.setMessage("가구 데이터를 받는 중입니다.");
-            progressDialog.setCancelable(false);
-            progressDialog.setIndeterminate(true);
-            progressDialog.show();
-        }
-
-        @Override
-        protected void onPostExecute(String result) {
-            super.onPostExecute(result);
-
-            progressDialog.dismiss();
-            Log.d(TAG, "response - " + result);
-
-            // 결과가 도착한 경우
-            if (result != null){
-                // 내용물이 없는 경우
-                if (result.equals("")) {
-                    Log.d(TAG, "UpData : error");
-                }
-                // 내용물이 있는 경우
-                else {
-                    // 성공적인 진행
-                    uploadModel(result);
-                }
-            }
-            // 연결에 실패한 경우
-            else{
-                Log.d(TAG, "connect failed");
-            }
-        }
-
-        @Override
-        protected String doInBackground(String... params) {
-
-            String serverURL = params[0];
-            String name = params[1];
-
-            try {
-                HttpURLConnection conn = null;
-                DataOutputStream dos = null;
-                String lineEnd = "\r\n";
-                String twoHyphens = "--";
-                String boundary = "*****";
-                int bytesRead, bytesAvailable, bufferSize;
-                byte[] buffer;
-                int maxBufferSize = 1 * 1024 * 1024;
-                File sourceFile;
-                FileInputStream fileInputStream;
-
-                URL url = new URL(serverURL);
-
-                // Open a HTTP  connection to  the URL
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setDoInput(true); // Allow Inputs
-                conn.setDoOutput(true); // Allow Outputs
-                conn.setUseCaches(false); // Don't use a Cached Copy
-                conn.setRequestMethod("POST");
-                conn.setRequestProperty("Connection", "Keep-Alive");
-                conn.setRequestProperty("ENCTYPE", "multipart/form-data");
-                conn.setRequestProperty("Content-Type", "multipart/form-data;boundary=" + boundary);
-
-                DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
-
-
-                // 텍스트 데이터
-                wr.writeBytes("\r\n--" + boundary + "\r\n");
-                wr.writeBytes("Content-Disposition: form-data; name=\"name\"\r\n\r\n" + URLEncoder.encode(name, "UTF-8"));
-                wr.writeBytes("\r\n--" + boundary + "\r\n");
-
-
-                // obj 전송
-                sourceFile = new File(getFilesDir().getAbsolutePath() + "/models/" + name + ".obj");
-                fileInputStream = new FileInputStream(sourceFile);
-
-                dos = new DataOutputStream(conn.getOutputStream());
-                dos.writeBytes(twoHyphens + boundary + lineEnd);
-                dos.writeBytes("Content-Disposition: form-data; name=\"obj\";filename=\"" + name + ".obj\"" + lineEnd);
-                dos.writeBytes(lineEnd);
-
-                // create a buffer of  maximum size
-                bytesAvailable = fileInputStream.available();
-                bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                buffer = new byte[bufferSize];
-
-                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-
-                while (bytesRead > 0) {
-                    dos.write(buffer, 0, bufferSize);
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                }
-
-                dos.writeBytes(lineEnd);
-                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-
-
-                // 텍스쳐 전송
-                sourceFile = new File(getFilesDir().getAbsolutePath() + "/models/" + name + ".png");
-                fileInputStream = new FileInputStream(sourceFile);
-
-                dos = new DataOutputStream(conn.getOutputStream());
-                dos.writeBytes(twoHyphens + boundary + lineEnd);
-                dos.writeBytes("Content-Disposition: form-data; name=\"tex\";filename=\"" + name + ".png\"" + lineEnd);
-                dos.writeBytes(lineEnd);
-
-                // create a buffer of  maximum size
-                bytesAvailable = fileInputStream.available();
-                bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                buffer = new byte[bufferSize];
-
-                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-
-                while (bytesRead > 0) {
-                    dos.write(buffer, 0, bufferSize);
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                }
-
-                dos.writeBytes(lineEnd);
-                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-
-
-                // 프리뷰 전송
-                sourceFile = new File(getFilesDir().getAbsolutePath() + "/previews/" + name + "preview.png");
-                fileInputStream = new FileInputStream(sourceFile);
-
-                dos = new DataOutputStream(conn.getOutputStream());
-                dos.writeBytes(twoHyphens + boundary + lineEnd);
-                dos.writeBytes("Content-Disposition: form-data; name=\"pre\";filename=\"" + name + "_preview.png\"" + lineEnd);
-                dos.writeBytes(lineEnd);
-
-                // create a buffer of  maximum size
-                bytesAvailable = fileInputStream.available();
-                bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                buffer = new byte[bufferSize];
-
-                bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-
-                while (bytesRead > 0) {
-                    dos.write(buffer, 0, bufferSize);
-                    bytesAvailable = fileInputStream.available();
-                    bufferSize = Math.min(bytesAvailable, maxBufferSize);
-                    bytesRead = fileInputStream.read(buffer, 0, bufferSize);
-                }
-
-                dos.writeBytes(lineEnd);
-                dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
-
-
-                // 대답 체크
-                int responseStatusCode = conn.getResponseCode();
-                Log.d(TAG, "response code - " + responseStatusCode);
-
-                InputStream inputStream;
-                if(responseStatusCode == HttpURLConnection.HTTP_OK) {
-                    inputStream = conn.getInputStream();
-                }
-                else{
-                    inputStream = conn.getErrorStream();
-                }
-
-                // 통신 정보를 저장
-                InputStreamReader inputStreamReader = new InputStreamReader(inputStream, "UTF-8");
-                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-                StringBuilder sb = new StringBuilder();
-                String line;
-
-                while((line = bufferedReader.readLine()) != null){
-                    sb.append(line);
-                }
-
-                bufferedReader.close();
-
-                return sb.toString().trim();
-
-            } catch (Exception e) {
-                Log.d(TAG, "UpData : Error ", e);
-                errorString = e.toString();
-
-                return null;
-            }
-        }
     }
 
     public void uploadModel(String name){
         if (name.equals("already exist")){
             AlertDialog.Builder alert = new AlertDialog.Builder(this, R.style.Dialog);
             alert.setTitle("모델 업로드 실패");
-            alert.setMessage("이미 서버에 존재하는 모델입니다.");
+            alert.setMessage("이미 서버에 존재하는 모델이에요.");
             alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -1716,7 +1538,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         else {
             AlertDialog.Builder alert = new AlertDialog.Builder(this, R.style.Dialog);
             alert.setTitle("모델 업로드");
-            alert.setMessage(name + " 모델 업로드 완료!");
+            alert.setMessage(name + " 모델 업로드를 성공적으로 완료했어요.");
             alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -1761,7 +1583,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             icon.setImageResource(R.drawable.upload_icon);
             icon.setVisibility(View.VISIBLE);
             text.setVisibility(View.VISIBLE);
-            Toast.makeText(getApplicationContext(), "업로드모드", Toast.LENGTH_SHORT).show();
+
+            LayoutInflater inflater = getLayoutInflater();
+            View toastDesign = inflater.inflate(R.layout.toast, null);
+            TextView toastText = toastDesign.findViewById(R.id.toast_text);
+            toastText.setText("업로드 모드에 진입했어요.");
+            ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+            toastImage.setVisibility(View.GONE);
+            Toast toast = new Toast(getApplicationContext());
+            toast.setGravity(Gravity.BOTTOM, 0, 150);
+            toast.setDuration(Toast.LENGTH_SHORT);
+            toast.setView(toastDesign);
+            toast.show();
         }
 
         // 뷰 갱신 및 위치 고정
@@ -1798,7 +1631,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             icon.setImageResource(R.drawable.del_icon);
             icon.setVisibility(View.VISIBLE);
             text.setVisibility(View.VISIBLE);
-            Toast.makeText(getApplicationContext(), "삭제모드", Toast.LENGTH_SHORT).show();
+
+            LayoutInflater inflater = getLayoutInflater();
+            View toastDesign = inflater.inflate(R.layout.toast, null);
+            TextView toastText = toastDesign.findViewById(R.id.toast_text);
+            toastText.setText("삭제 모드에 진입했어요.");
+            ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+            toastImage.setVisibility(View.GONE);
+            Toast toast = new Toast(getApplicationContext());
+            toast.setGravity(Gravity.BOTTOM, 0, 150);
+            toast.setDuration(Toast.LENGTH_SHORT);
+            toast.setView(toastDesign);
+            toast.show();
         }
 
         // 뷰 갱신 및 위치 고정
@@ -1821,12 +1665,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         // 서브 메뉴 클릭
         if (isSubmenu){
             isSubmenu = false;
-            animatePagerTransitionSub(false, 1);
-
+            animatePagerTransitionSub(false);
         }
         else {
             isSubmenu = true;
-            animatePagerTransitionSub(true, 1);
+            animatePagerTransitionSub(true);
             // 모드 정리
             if (isDel){
                 furDeleteClick(null);
@@ -1840,7 +1683,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     public void furnitureMenuClick(View view){
         if(!isUp){
             //열기
-            animatePagerTransitionFur(true, 1);
+            animatePagerTransitionFur(true);
             viewPagerSubmenu.setUserInputEnabled(true);
             isUp = true;
 
@@ -1856,7 +1699,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
         else{
             //닫기
-            animatePagerTransitionFur(false, 1);
+            animatePagerTransitionFur(false);
             if (isSubmenu){
                 subMenuClick(null);
             }
@@ -1924,9 +1767,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     public void resetClick(View view){
         //리셋 확인 다이얼로그
-        AlertDialog.Builder alert  = new AlertDialog.Builder(this, R.style.Dialog);
+        AlertDialog.Builder alert = new AlertDialog.Builder(this, R.style.Dialog);
         alert.setTitle("Reset");
-        alert.setMessage("배치된 모든 모델을 제거하고, 인식된 바닥을 초기화 합니다.");
+        alert.setMessage("배치된 모든 모델을 제거하고, 인식된 바닥을 초기화 할까요?");
         alert.setPositiveButton("바닥까지 초기화", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -1966,7 +1809,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 displayRotationHelper.onResume();
 
                 dialog.cancel();
-                Toast.makeText(getApplicationContext(), "재설정 완료", Toast.LENGTH_SHORT).show();
+
+                LayoutInflater inflater = getLayoutInflater();
+                View toastDesign = inflater.inflate(R.layout.toast, null);
+                TextView toastText = toastDesign.findViewById(R.id.toast_text);
+                toastText.setText("재설정을 성공적으로 완료했어요.");
+                ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+                toastImage.setVisibility(View.GONE);
+                Toast toast = new Toast(getApplicationContext());
+                toast.setGravity(Gravity.BOTTOM, 0, 150);
+                toast.setDuration(Toast.LENGTH_SHORT);
+                toast.setView(toastDesign);
+                toast.show();
             }
         });
         alert.setNegativeButton("모델만 제거", new DialogInterface.OnClickListener() {
@@ -1983,7 +1837,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
 
                 dialog.cancel();
-                Toast.makeText(getApplicationContext(), "모델 제거 완료", Toast.LENGTH_SHORT).show();
+
+                LayoutInflater inflater = getLayoutInflater();
+                View toastDesign = inflater.inflate(R.layout.toast, null);
+                TextView toastText = toastDesign.findViewById(R.id.toast_text);
+                toastText.setText("배치된 모델을 성공적으로 제거했어요.");
+                ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+                toastImage.setVisibility(View.GONE);
+                Toast toast = new Toast(getApplicationContext());
+                toast.setGravity(Gravity.BOTTOM, 0, 150);
+                toast.setDuration(Toast.LENGTH_SHORT);
+                toast.setView(toastDesign);
+                toast.show();
             }
         });
         alert.setNeutralButton("취소", new DialogInterface.OnClickListener() {
@@ -2033,16 +1898,31 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             @Override
             public void run() {
                 if(saveSucess){
-                    AlertDialog.Builder alert  = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
-                    alert.setMessage("촬영에 성공했어요.");
-                    alert.show();
+                    LayoutInflater inflater = getLayoutInflater();
+                    View toastDesign = inflater.inflate(R.layout.toast, null);
+                    TextView toastText = toastDesign.findViewById(R.id.toast_text);
+                    toastText.setText("촬영에 성공했어요.");
+                    ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+                    toastImage.setVisibility(View.GONE);
+                    Toast toast = new Toast(getApplicationContext());
+                    toast.setGravity(Gravity.BOTTOM, 0, 150);
+                    toast.setDuration(Toast.LENGTH_SHORT);
+                    toast.setView(toastDesign);
+                    toast.show();
                 }
                 else{
-                    AlertDialog.Builder alert  = new AlertDialog.Builder(MainActivity.this, R.style.Dialog);
-                    alert.setMessage("촬영에 실패했어요.");
-                    alert.show();
+                    LayoutInflater inflater = getLayoutInflater();
+                    View toastDesign = inflater.inflate(R.layout.toast, null);
+                    TextView toastText = toastDesign.findViewById(R.id.toast_text);
+                    toastText.setText("촬영에 실패했어요.");
+                    ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+                    toastImage.setVisibility(View.GONE);
+                    Toast toast = new Toast(getApplicationContext());
+                    toast.setGravity(Gravity.BOTTOM, 0, 150);
+                    toast.setDuration(Toast.LENGTH_SHORT);
+                    toast.setView(toastDesign);
+                    toast.show();
                 }
-
             }
         }, 500);
     }
@@ -2184,26 +2064,50 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 if (!whatFont.equals(font)){
                     whatFont = font;
 
+                    TextView tutorialText = findViewById(R.id.gif_plane_tutirial_text);
+                    TextView battaryText = findViewById(R.id.textView_battery);
+                    TextView timeText = findViewById(R.id.text_time);
                     switch (whatFont){
                         case "나눔R":
                             setTheme(R.style.AppTheme_NanumR);
+                            textViewPreview.setTypeface(getResources().getFont(R.font.nanumroundr));
+                            tutorialText.setTypeface(getResources().getFont(R.font.nanumroundr));
+                            battaryText.setTypeface(getResources().getFont(R.font.nanumroundr));
+                            timeText.setTypeface(getResources().getFont(R.font.nanumroundr));
                             break;
                         case "나눔B":
                             setTheme(R.style.AppTheme_NanumB);
+                            textViewPreview.setTypeface(getResources().getFont(R.font.nanumroundb));
+                            tutorialText.setTypeface(getResources().getFont(R.font.nanumroundb));
+                            battaryText.setTypeface(getResources().getFont(R.font.nanumroundb));
+                            timeText.setTypeface(getResources().getFont(R.font.nanumroundb));
                             break;
                         case "카페":
                             setTheme(R.style.AppTheme_Cafe);
+                            textViewPreview.setTypeface(getResources().getFont(R.font.cafe24surround));
+                            tutorialText.setTypeface(getResources().getFont(R.font.cafe24surround));
+                            battaryText.setTypeface(getResources().getFont(R.font.cafe24surround));
+                            timeText.setTypeface(getResources().getFont(R.font.cafe24surround));
                             break;
                         case "에스코드":
                             setTheme(R.style.AppTheme_Sc);
+                            textViewPreview.setTypeface(getResources().getFont(R.font.scdream3));
+                            tutorialText.setTypeface(getResources().getFont(R.font.scdream3));
+                            battaryText.setTypeface(getResources().getFont(R.font.scdream3));
+                            timeText.setTypeface(getResources().getFont(R.font.scdream3));
                             break;
                         default:
                             setTheme(R.style.AppTheme);
+                            textViewPreview.setTypeface(Typeface.DEFAULT);
+                            tutorialText.setTypeface(Typeface.DEFAULT);
+                            battaryText.setTypeface(Typeface.DEFAULT);
+                            timeText.setTypeface(Typeface.DEFAULT);
                             break;
                     }
-                    onPause();
 
-                    recreate();
+                    //재생산
+                    setViewPagerFurniturelist();
+                    setViewPagerSubmenu();
                 }
                 if (isPlane != plane){
                     isPlane = plane;
@@ -2307,6 +2211,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         @Override
         public void onClosed(@NonNull CameraCaptureSession session) {
             Log.d(TAG, "Camera capture session closed.");
+            super.onClosed(session);
+            stopBackgroundThread();
         }
         @Override
         public void onConfigureFailed(@NonNull CameraCaptureSession session) {
@@ -2351,5 +2257,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         } catch (CameraAccessException e) {
             Log.e(TAG, "Failed to set repeating request", e);
         }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState, @NonNull PersistableBundle outPersistentState) {
+        super.onSaveInstanceState(outState, outPersistentState);
+        outState.putBoolean("first", false);
+        outPersistentState.putBoolean("first", false);
     }
 }
