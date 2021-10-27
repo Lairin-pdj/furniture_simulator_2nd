@@ -129,8 +129,6 @@ import de.javagl.obj.Obj;
 import de.javagl.obj.ObjReader;
 import de.javagl.obj.ObjWriter;
 
-import static com.example.cameratest.sub.Furniturelist.furniturelist;
-
 public class MainActivity extends AppCompatActivity implements GLSurfaceView.Renderer, ImageReader.OnImageAvailableListener {
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -603,10 +601,28 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             }
         }
 
-        //capture 기능 코드
+        // capture 기능 코드
         try{
             if(saveCheck) {
                 saveCheck = false;
+
+                // 스레드로 인해 순차적 반영 불가 상태
+                // 다른 방법 모색중
+                /*
+                // plane 제거
+                boolean flag = false;
+                try {
+                    if (isPlaneshow) {
+                        Log.d("plane check", ":transparent");
+                        planeRenderer.createOnGlThread(this, "models/transparent.png");
+                        flag = true;
+                    }
+                }catch (IOException e){
+                    Log.e(TAG, "ar rendering : io error", e);
+                }
+                 */
+
+                // 캡처 진행
                 int width = MainActivity.surfaceView.getWidth();
                 int height = MainActivity.surfaceView.getHeight();
 
@@ -634,6 +650,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 Bitmap bm = Bitmap.createBitmap(bitmapSource, width, height, Bitmap.Config.ARGB_8888);
 
                 saveSucess = screenShot(bm);
+
+                /*
+                // plane 복구
+                if (flag){
+                    try {
+                        Log.d("plane check", ":trigrid");
+                        planeRenderer.createOnGlThread(this, "models/trigrid.png");
+                    }catch (IOException e){
+                        Log.e(TAG, "ar rendering : io error", e);
+                    }
+                }
+                 */
             }
         }catch (GLException e){
             Log.e(TAG, "capture : error", e);
@@ -1312,7 +1340,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         TimerTask battery = new TimerTask() {
             @Override
             public void run() {
-                Log.v(TAG,"timer run");
                 Message msg = handler.obtainMessage();
                 handler.sendMessage(msg);
             }
@@ -1339,7 +1366,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         TimerTask battery = new TimerTask() {
             @Override
             public void run() {
-                Log.v(TAG,"timer run");
                 Message msg = handler.obtainMessage();
                 handler.sendMessage(msg);
             }
@@ -1599,11 +1625,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         // 뷰 갱신 및 위치 고정
         isMode = true;
-        furniturelist.recyclerViewState = furniturelist.recyclerView.getLayoutManager().onSaveInstanceState();
-        Furniturelist.CustomerAdapter adapter = (Furniturelist.CustomerAdapter)furniturelist.recyclerView.getAdapter();
+        Furniturelist.furniturelist.recyclerViewState = Furniturelist.furniturelist.recyclerView.getLayoutManager().onSaveInstanceState();
+        Furniturelist.CustomerAdapter adapter = (Furniturelist.CustomerAdapter) Furniturelist.furniturelist.recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
-        furniturelist.recyclerView.setAdapter(adapter);
-        furniturelist.recyclerView.getLayoutManager().onRestoreInstanceState(furniturelist.recyclerViewState);
+        Furniturelist.furniturelist.recyclerView.setAdapter(adapter);
+        Furniturelist.furniturelist.recyclerView.getLayoutManager().onRestoreInstanceState(Furniturelist.furniturelist.recyclerViewState);
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -1647,11 +1673,11 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         // 뷰 갱신 및 위치 고정
         isMode = true;
-        furniturelist.recyclerViewState = furniturelist.recyclerView.getLayoutManager().onSaveInstanceState();
-        Furniturelist.CustomerAdapter adapter = (Furniturelist.CustomerAdapter)furniturelist.recyclerView.getAdapter();
+        Furniturelist.furniturelist.recyclerViewState = Furniturelist.furniturelist.recyclerView.getLayoutManager().onSaveInstanceState();
+        Furniturelist.CustomerAdapter adapter = (Furniturelist.CustomerAdapter) Furniturelist.furniturelist.recyclerView.getAdapter();
         adapter.notifyDataSetChanged();
-        furniturelist.recyclerView.setAdapter(adapter);
-        furniturelist.recyclerView.getLayoutManager().onRestoreInstanceState(furniturelist.recyclerViewState);
+        Furniturelist.furniturelist.recyclerView.setAdapter(adapter);
+        Furniturelist.furniturelist.recyclerView.getLayoutManager().onRestoreInstanceState(Furniturelist.furniturelist.recyclerViewState);
         Handler handler = new Handler();
         handler.postDelayed(new Runnable() {
             @Override
@@ -2018,7 +2044,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         //모델생성 확인시 표시를 위해서
         if(requestCode == 0){
             if(resultCode == RESULT_OK) {
-                furniturelist.setFurnitureList();
+                Furniturelist.furniturelist.setFurnitureList();
                 String newModel = data.getExtras().getString("modelname");
                 newModelName = newModel;
                 isNewModel = true;
@@ -2030,7 +2056,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 String [] strings = {"andy", "desk", "chair", "lamp"};
 
                 // 가구 목록 갱신
-                furniturelist.setFurnitureList();
+                Furniturelist.furniturelist.setFurnitureList();
 
                 // 이미 렌더링 되있는 앵커 중 기본 모델 아닌 것 제거
                 for (int i = 0; i < anchors.size(); i++){
@@ -2148,14 +2174,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private final CameraDevice.StateCallback cameraDeviceCallback = new CameraDevice.StateCallback() {
         @Override
         public void onOpened(@NonNull CameraDevice cameraDevice) {
-            Log.d(TAG, "Camera device ID " + cameraDevice.getId() + " opened.");
             MainActivity.this.cameraDevice = cameraDevice;
             createCameraPreviewSession();
         }
 
         @Override
         public void onClosed(@NonNull CameraDevice cameraDevice) {
-            Log.d(TAG, "Camera device ID " + cameraDevice.getId() + " closed.");
             MainActivity.this.cameraDevice = null;
             safeToExitApp.open();
         }
@@ -2169,7 +2193,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         @Override
         public void onError(@NonNull CameraDevice cameraDevice, int error) {
-            Log.e(TAG, "Camera device ID " + cameraDevice.getId() + " error " + error);
             cameraDevice.close();
             MainActivity.this.cameraDevice = null;
             // Fatal error. Quit application.
@@ -2180,22 +2203,18 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     CameraCaptureSession.StateCallback cameraSessionStateCallback = new CameraCaptureSession.StateCallback() {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
-            Log.d(TAG, "Camera capture session configured.");
             captureSession = session;
             setRepeatingCaptureRequest();
         }
         @Override
         public void onSurfacePrepared(@NonNull CameraCaptureSession session, @NonNull Surface surface) {
-            Log.d(TAG, "Camera capture surface prepared.");
         }
         @Override
         public void onReady(@NonNull CameraCaptureSession session) {
-            Log.d(TAG, "Camera capture session ready.");
         }
 
         @Override
         public void onActive(@NonNull CameraCaptureSession session) {
-            Log.d(TAG, "Camera capture session active.");
             if (!arcoreActive) {
                 resumeARCore();
             }
@@ -2210,7 +2229,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
         @Override
         public void onClosed(@NonNull CameraCaptureSession session) {
-            Log.d(TAG, "Camera capture session closed.");
             super.onClosed(session);
             stopBackgroundThread();
         }

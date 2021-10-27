@@ -21,7 +21,7 @@
             android:defaultValue="true"
             android:icon="@drawable/setting_time"/>
 
-        <ListPreference
+        <com.example.cameratest.sub.FontListPreference
             android:key="font"
             android:title="폰트 설정"
             android:summary="폰트이름"
@@ -42,6 +42,10 @@
             android:summary="바닥 표시를 선택할 수 있습니다."
             android:defaultValue="true"
             android:icon="@drawable/setting_floor"/>
+
+        <Preference
+            android:key="planeimage"
+            app:layout="@layout/setting_floor_image"/>
 
     </PreferenceCategory>
 

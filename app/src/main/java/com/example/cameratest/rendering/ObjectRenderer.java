@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
-import android.os.Environment;
 
 import de.javagl.obj.Obj;
 import de.javagl.obj.ObjData;

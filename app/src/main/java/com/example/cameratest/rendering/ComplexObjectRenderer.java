@@ -1,7 +1,6 @@
 package com.example.cameratest.rendering;
 
 import android.content.Context;
-import android.opengl.Matrix;
 import android.util.Log;
 
 import java.io.IOException;

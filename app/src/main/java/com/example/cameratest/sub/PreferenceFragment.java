@@ -11,6 +11,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
@@ -27,9 +28,12 @@ public class PreferenceFragment extends PreferenceFragmentCompat {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.settings, rootKey);
-        Preference font = (Preference)findPreference("font");
+        ListPreference font = (ListPreference)findPreference("font");
         pref = PreferenceManager.getDefaultSharedPreferences(getContext());
         font.setSummary(pref.getString("font", "기본"));
+
+        Preference planeImage = findPreference("planeimage");
+        planeImage.setEnabled(false);
     }
 
     @Override

@@ -17,12 +17,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-// androidx 이전
-//import android.support.annotation.NonNull;
-//import android.support.v7.app.AlertDialog;
-//import android.support.v7.app.AppCompatActivity;
-//import android.support.v7.widget.GridLayoutManager;
-//import android.support.v7.widget.RecyclerView;
 import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.util.Log;
@@ -257,7 +251,6 @@ public class DownloadActivity extends AppCompatActivity {
             super.onPostExecute(result);
 
             progressDialog.dismiss();
-            Log.d(TAG, "response - " + result);
 
             ImageView connect = (ImageView)findViewById(R.id.connect_failed);
             ImageView search = (ImageView)findViewById(R.id.no_search);
@@ -285,7 +278,6 @@ public class DownloadActivity extends AppCompatActivity {
             else{
                 connect.bringToFront();
                 connect.setVisibility(View.VISIBLE);
-                Log.d(TAG, "connect failed");
             }
         }
 
@@ -313,7 +305,6 @@ public class DownloadActivity extends AppCompatActivity {
                 outputStream.close();
 
                 int responseStatusCode = httpURLConnection.getResponseCode();
-                Log.d(TAG, "response code - " + responseStatusCode);
 
                 InputStream inputStream;
                 if(responseStatusCode == HttpURLConnection.HTTP_OK) {
@@ -339,7 +330,7 @@ public class DownloadActivity extends AppCompatActivity {
                 return sb.toString().trim();
 
             } catch (Exception e) {
-                Log.d(TAG, "GetData : Error ", e);
+                Log.e(TAG, "GetData : Error ", e);
                 errorString = e.toString();
 
                 return null;
@@ -402,7 +393,7 @@ public class DownloadActivity extends AppCompatActivity {
             recyclerView.setLayoutAnimation(animationController);
 
         } catch (JSONException e) {
-            Log.d(TAG, "showResult : ", e);
+            Log.e(TAG, "showResult : ", e);
         }
     }
 
@@ -445,14 +436,13 @@ public class DownloadActivity extends AppCompatActivity {
             super.onPostExecute(result);
 
             progressDialog.dismiss();
-            Log.d(TAG, "response - " + result);
 
             // 결과가 도착한 경우
             if (result != null){
 
                 // 내용물이 없는 경우
                 if (result.equals("")) {
-                    Log.e(TAG, "DownData : savename error");
+                    Log.w(TAG, "DownData : savename error");
                 }
                 // 내용물이 있는 경우
                 else {
@@ -461,7 +451,7 @@ public class DownloadActivity extends AppCompatActivity {
             }
             // 연결에 실패한 경우
             else{
-                Log.d(TAG, "connect failed");
+                Log.e(TAG, "connect failed");
             }
         }
 
@@ -485,7 +475,6 @@ public class DownloadActivity extends AppCompatActivity {
                 httpURLConnection.connect();
 
                 int responseStatusCode = httpURLConnection.getResponseCode();
-                Log.d(TAG, "response code - " + responseStatusCode);
 
                 InputStream inputStream;
                 if(responseStatusCode == HttpURLConnection.HTTP_OK) {
@@ -498,7 +487,7 @@ public class DownloadActivity extends AppCompatActivity {
                 downloadData.preview = BitmapFactory.decodeStream(inputStream);
 
             } catch (Exception e) {
-                Log.d(TAG, "DownData : preview : Error ", e);
+                Log.e(TAG, "DownData : preview : Error ", e);
                 errorString = e.toString();
 
                 return null;
@@ -515,7 +504,6 @@ public class DownloadActivity extends AppCompatActivity {
                 httpURLConnection.connect();
 
                 int responseStatusCode = httpURLConnection.getResponseCode();
-                Log.d(TAG, "response code - " + responseStatusCode);
 
                 InputStream inputStream;
                 if(responseStatusCode == HttpURLConnection.HTTP_OK) {
@@ -528,7 +516,7 @@ public class DownloadActivity extends AppCompatActivity {
                 downloadData.obj = ObjReader.read(inputStream);
 
             } catch (Exception e) {
-                Log.d(TAG, "DownData : obj : Error ", e);
+                Log.e(TAG, "DownData : obj : Error ", e);
                 errorString = e.toString();
 
                 return null;
@@ -545,7 +533,6 @@ public class DownloadActivity extends AppCompatActivity {
                 httpURLConnection.connect();
 
                 int responseStatusCode = httpURLConnection.getResponseCode();
-                Log.d(TAG, "response code - " + responseStatusCode);
 
                 InputStream inputStream;
                 if(responseStatusCode == HttpURLConnection.HTTP_OK) {
@@ -558,7 +545,7 @@ public class DownloadActivity extends AppCompatActivity {
                 downloadData.texture = BitmapFactory.decodeStream(inputStream);
 
             } catch (Exception e) {
-                Log.d(TAG, "DownData : texture : Error ", e);
+                Log.e(TAG, "DownData : texture : Error ", e);
                 errorString = e.toString();
 
                 return null;
@@ -580,10 +567,9 @@ public class DownloadActivity extends AppCompatActivity {
                 outputStream.close();
 
                 int responseStatusCode = httpURLConnection.getResponseCode();
-                Log.d(TAG, "response code - " + responseStatusCode);
 
             } catch (Exception e) {
-                Log.d(TAG, "DownData : counter : Error ", e);
+                Log.e(TAG, "DownData : counter : Error ", e);
                 errorString = e.toString();
 
                 return null;

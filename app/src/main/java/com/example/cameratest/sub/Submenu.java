@@ -5,7 +5,6 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -18,7 +17,6 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.example.cameratest.MainActivity;
 import com.example.cameratest.R;
 
 import java.util.ArrayList;
@@ -27,6 +25,8 @@ import static com.example.cameratest.MainActivity.getInstance;
 
 public class Submenu extends Fragment {
     private RecyclerView subRecyclerView;
+    Handler[] handlers = new Handler[6];
+    private SubAdapter subAdapter;
 
     private static class subMenuData{
         public int picture;
@@ -39,20 +39,20 @@ public class Submenu extends Fragment {
             this.text = text;
         }
     }
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         ViewGroup rootView = (ViewGroup)inflater.inflate(R.layout.submenu_main, container, false);
 
         subRecyclerView = rootView.findViewById(R.id.submenu_View);
-
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false);
         subRecyclerView.setLayoutManager(layoutManager);
 
         // 데코 적용
         subRecyclerView.addItemDecoration(new DividingItemDecoration(2));
 
-        SubAdapter subAdapter = new SubAdapter(getContext());
+        subAdapter = new SubAdapter(getContext());
 
         subAdapter.addItem(new subMenuData(R.drawable.create_icon, "Model Create", "가구 모델을 만들 수 있습니다."));
         subAdapter.addItem(new subMenuData(R.drawable.download_icon, "Download", "서버에서 다양한 가구 모델을 받을 수 있습니다."));
@@ -64,6 +64,43 @@ public class Submenu extends Fragment {
         subRecyclerView.setAdapter(subAdapter);
 
         return rootView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // 포커스 주기
+        for (int i = 0; i < 6; i++) {
+            if (subRecyclerView.findViewHolderForAdapterPosition(i) != null) {
+                TextView text = subRecyclerView.findViewHolderForAdapterPosition(i).itemView.findViewById(R.id.menu_text);
+                handlers[i] = new Handler();
+                handlers[i].postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        text.setSelected(true);
+                    }
+                }, 3000);
+            }
+            else{
+                handlers[i] = new Handler();
+            }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // 포커스 뺏기
+        for (int i = 0; i < 6; i++) {
+            if (subRecyclerView.findViewHolderForAdapterPosition(i) != null) {
+                TextView text = subRecyclerView.findViewHolderForAdapterPosition(i).itemView.findViewById(R.id.menu_text);
+                if (handlers[i] != null) {
+                    handlers[i].removeCallbacksAndMessages(null);
+                }
+                text.setSelected(false);
+            }
+        }
     }
 
     public class SubAdapter extends RecyclerView.Adapter<SubAdapter.ViewHolder>{
@@ -102,13 +139,15 @@ public class Submenu extends Fragment {
         public void onViewAttachedToWindow(@NonNull SubAdapter.ViewHolder holder) {
             // marquee의 시작 시점
             super.onViewAttachedToWindow(holder);
-            Handler handler = new Handler();
-            handler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    holder.text.setSelected(true);
-                }
-            }, 3000);
+            if (handlers[holder.getAdapterPosition()] != null) {
+                handlers[holder.getAdapterPosition()] = new Handler();
+                handlers[holder.getAdapterPosition()].postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        holder.text.setSelected(true);
+                    }
+                }, 3000);
+            }
         }
 
         @Override
@@ -116,6 +155,7 @@ public class Submenu extends Fragment {
             // marquee의 종료 시점
             super.onViewDetachedFromWindow(holder);
             holder.text.setSelected(false);
+            handlers[holder.getAdapterPosition()].removeCallbacksAndMessages(null);
         }
 
         class ViewHolder extends RecyclerView.ViewHolder{
