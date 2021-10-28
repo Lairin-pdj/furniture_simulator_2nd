@@ -3,20 +3,34 @@ package com.example.cameratest;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
+
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 
 import me.relex.circleindicator.CircleIndicator3;
 
@@ -27,9 +41,36 @@ public class HelpActivity extends AppCompatActivity {
     private int nowPosition = 0;
 
     private int[] images = new int[]{
-            R.drawable.help_image01,
-            R.drawable.help_image02,
-            R.drawable.help_image03
+            R.drawable.plane_tutorial,
+            R.drawable.plane_tutorial,
+            R.drawable.plane_tutorial,
+            R.drawable.plane_tutorial,
+            R.drawable.plane_tutorial,
+            R.drawable.plane_tutorial,
+            R.drawable.plane_tutorial,
+            R.drawable.plane_tutorial
+    };
+
+    private String[] headers = new String[]{
+            "모델을 배치하는 방법",
+            "모델을 조작하는 방법",
+            "모델들을 제거하거나 바닥을 재설정하는 방법",
+            "간편하게 목록 여는 방법",
+            "가구를 생성하는 방법",
+            "가구를 다운로드하는 방법",
+            "가구를 업로드하는 방법",
+            "가구를 지우는 방법"
+    };
+
+    private String[] explanes = new String[]{
+            "모델을 배치하는 방법_explane",
+            "모델을 조작하는 방법_explane",
+            "모델들을 제거하거나 바닥을 재설정하는 방법_explane",
+            "간편하게 목록 여는 방법_explane",
+            "가구를 생성하는 방법_explane",
+            "가구를 다운로드하는 방법_explane",
+            "가구를 업로드하는 방법_explane",
+            "가구를 지우는 방법_explane"
     };
 
     @Override
@@ -67,20 +108,26 @@ public class HelpActivity extends AppCompatActivity {
         indicator = findViewById(R.id.image_slider_indicator);
 
         viewPager.setOffscreenPageLimit(1);
-        viewPager.setAdapter(new ImageSliderAdapter(this, images));
-        viewPager.setPageTransformer(new DepthPageTransformer());
+        viewPager.setAdapter(new ImageSliderAdapter(this, images, headers, explanes));
 
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
             @Override
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
                 viewPager.setCurrentItem(position);
+
+                RecyclerView recyclerView = (RecyclerView) viewPager.getChildAt(0);
+                RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(position);
+                if (holder != null) {
+                    ImageView imageView = holder.itemView.findViewById(R.id.image_slider);
+                    Glide.with(getApplicationContext()).load(images[position]).into(imageView);
+                }
                 nowPosition = position;
             }
         });
 
         indicator.setViewPager(viewPager);
-        indicator.createIndicators(3, 0);
+        indicator.createIndicators(8, 0);
     }
 
     @Override
@@ -106,7 +153,7 @@ public class HelpActivity extends AppCompatActivity {
     }
 
     public void forwardClick(View view){
-        if (nowPosition != 2){
+        if (nowPosition != 7){
             nowPosition += 1;
             viewPager.setCurrentItem(nowPosition);
         }
@@ -123,53 +170,17 @@ public class HelpActivity extends AppCompatActivity {
         super.onBackPressed();
     }
 
-    public class DepthPageTransformer implements ViewPager2.PageTransformer {
-        private static final float MIN_SCALE = 0.75f;
-
-        public void transformPage(View view, float position) {
-            int pageWidth = view.getWidth();
-
-            if (position < -1) { // [-Infinity,-1)
-                // This page is way off-screen to the left.
-                view.setAlpha(0f);
-
-            } else if (position <= 0) { // [-1,0]
-                // Use the default slide transition when moving to the left page
-                view.setAlpha(1f);
-                view.setTranslationX(0f);
-                view.setTranslationZ(0f);
-                view.setScaleX(1f);
-                view.setScaleY(1f);
-
-            } else if (position <= 1) { // (0,1]
-                // Fade the page out.
-                view.setAlpha(1 - position);
-
-                // Counteract the default slide transition
-                view.setTranslationX(pageWidth * -position);
-                // Move it behind the left page
-                view.setTranslationZ(-1f);
-
-                // Scale the page down (between MIN_SCALE and 1)
-                float scaleFactor = MIN_SCALE
-                        + (1 - MIN_SCALE) * (1 - Math.abs(position));
-                view.setScaleX(scaleFactor);
-                view.setScaleY(scaleFactor);
-
-            } else { // (1,+Infinity]
-                // This page is way off-screen to the right.
-                view.setAlpha(0f);
-            }
-        }
-    }
-
     public class ImageSliderAdapter extends RecyclerView.Adapter<ImageSliderAdapter.MyViewHolder> {
         private Context context;
         private int[] sliderImage;
+        private String[] headers;
+        private String[] explanes;
 
-        public ImageSliderAdapter(Context context, int[] sliderImage) {
+        public ImageSliderAdapter(Context context, int[] sliderImage, String[] headers, String[] explanes) {
             this.context = context;
             this.sliderImage = sliderImage;
+            this.headers = headers;
+            this.explanes = explanes;
         }
 
         @NonNull
@@ -182,7 +193,7 @@ public class HelpActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-            holder.bindSliderImage(sliderImage[position]);
+            holder.bindSliderImage(sliderImage[position], headers[position], explanes[position]);
         }
 
         @Override
@@ -193,14 +204,20 @@ public class HelpActivity extends AppCompatActivity {
         public class MyViewHolder extends RecyclerView.ViewHolder {
 
             private ImageView imageView;
+            private TextView header;
+            private TextView explane;
 
             public MyViewHolder(@NonNull View itemView) {
                 super(itemView);
                 imageView = itemView.findViewById(R.id.image_slider);
+                header = itemView.findViewById(R.id.header_title);
+                explane = itemView.findViewById(R.id.explane_text);
             }
 
-            public void bindSliderImage(int imageid) {
-                imageView.setImageResource(imageid);
+            public void bindSliderImage(int imageid, String head, String text) {
+                //Glide.with(getApplicationContext()).load(imageid).into(imageView);
+                header.setText(head);
+                explane.setText(text);
             }
         }
     }

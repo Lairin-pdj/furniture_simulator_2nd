@@ -425,6 +425,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         else{
             layout_time.setVisibility(View.GONE);
         }
+
+        checkFirstRun();
     }
 
     @Override
@@ -491,7 +493,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         try {
             // Create the camera preview image texture. Used in non-AR and AR mode.
             backgroundRenderer.createOnGlThread(this);
-            planeRenderer.createOnGlThread(this, "models/trigrid.png");
+            if (isPlaneshow){
+                planeRenderer.createOnGlThread(this, "models/trigrid.png");
+            }
+            else {
+                planeRenderer.createOnGlThread(this, "models/transparent.png");
+            }
             pointCloudRenderer.createOnGlThread(this);
 
             // 내부 파일에서 모델링 가능한 목록 파싱
@@ -1269,6 +1276,16 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 else{
                     isUp = true;
                     viewPagerSubmenu.setUserInputEnabled(true);
+
+                    //선택 상태 유지를 막기위해 해제
+                    if (selectedAnchor >= 0) {
+                        anchors.get(selectedAnchor).selected = false;
+                        selectedAnchor = -1;
+                    }
+                    if (selected != null){
+                        selected = null;
+                        selectPreview.setVisibility(View.INVISIBLE);
+                    }
                 }
             }
         });
@@ -1372,6 +1389,35 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         };
         Timer timer = new Timer();
         timer.schedule(battery, 0, 3000);
+    }
+
+    public void checkFirstRun(){
+        boolean first = spref.getBoolean("isFirstRun", true);
+        if(first){
+            spref.edit().putBoolean("isFirstRun", false).apply();
+
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    LayoutInflater inflater = getLayoutInflater();
+                    View toastDesign = inflater.inflate(R.layout.toast_secondline, null);
+                    TextView toastText = toastDesign.findViewById(R.id.toast_text);
+                    toastText.setText("처음 앱을 사용하시는군요.\n도움말을 읽어 보시는건 어떨까요?");
+                    ImageView toastImage = toastDesign.findViewById(R.id.toast_image);
+                    toastImage.setImageResource(R.drawable.main_character);
+                    Toast toast = new Toast(getApplicationContext());
+                    toast.setGravity(Gravity.CENTER, 0, 0);
+                    toast.setDuration(Toast.LENGTH_LONG);
+                    toast.setView(toastDesign);
+                    toast.show();
+
+                    Intent intent = new Intent(getApplicationContext(), HelpActivity.class);
+                    startActivityForResult(intent, 2);
+                    overridePendingTransition(R.anim.activity_left_enter, R.anim.activity_left_exit);
+                }
+            }, 2000);
+        }
     }
 
     public class PagerAdapterFurniturelist extends FragmentStateAdapter {
