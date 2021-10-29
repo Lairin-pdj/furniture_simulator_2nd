@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/furniture_list_frame"
     android:layout_width="match_parent"
     android:layout_height="240dp"
@@ -51,14 +52,21 @@
         android:autoSizeTextType="uniform"
         android:visibility="invisible"/>
 
+    <ImageView
+        android:layout_width="40dp"
+        android:layout_height="3dp"
+        android:layout_gravity="center_horizontal|top"
+        android:layout_marginTop="3dp"
+        android:background="@drawable/touch_line_checker"/>
+
     <TextView
         android:id="@+id/furniture_text"
         android:layout_width="300dp"
-        android:layout_height="36dp"
+        android:layout_height="33dp"
         android:layout_gravity="center_horizontal|top"
         android:gravity="center"
-        android:layout_marginTop="5dp"
-        android:text="가구목록"
+        android:layout_marginTop="10dp"
+        android:text="가구 목록"
         android:textColor="@color/black"
         android:autoSizeMaxTextSize="100sp"
         android:autoSizeMinTextSize="10sp"

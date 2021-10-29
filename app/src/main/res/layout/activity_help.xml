@@ -9,14 +9,14 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="60dp"
         android:background="@drawable/download_bar_back"
         android:adjustViewBounds="true"
         android:scaleType="centerCrop">
 
         <TextView
             android:layout_width="300dp"
-            android:layout_height="40dp"
+            android:layout_height="35dp"
             android:layout_gravity="center"
             android:gravity="center"
             android:text="Help"
@@ -28,8 +28,8 @@
 
         <ImageButton
             android:id="@+id/imageButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="start|top"
             android:layout_marginStart="7dp"
             android:layout_marginTop="10dp"
@@ -42,7 +42,7 @@
         android:id="@+id/image_slider_viewpager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="70dp"
+        android:layout_marginTop="60dp"
         android:layout_marginBottom="80dp"/>
 
     <me.relex.circleindicator.CircleIndicator3

@@ -174,6 +174,8 @@ public class CreateActivity extends AppCompatActivity {
 
             }
         });
+
+        surfaceView.bringToFront();
     }
 
     @Override

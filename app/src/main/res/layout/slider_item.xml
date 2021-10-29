@@ -13,15 +13,17 @@
             android:id="@+id/image_card"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="10dp"
             android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
             android:layout_marginEnd="10dp"
+            android:layout_marginBottom="25dp"
             app:cardBackgroundColor="@color/white"
-            app:layout_constraintDimensionRatio="1:1"
             app:cardCornerRadius="20dp"
+            app:layout_constraintBottom_toTopOf="@+id/header_title"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_chainStyle="spread">
 
             <ImageView
                 android:id="@+id/image_slider"
@@ -46,13 +48,16 @@
         <TextView
             android:id="@+id/explane_text"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="150dp"
             android:layout_marginStart="20dp"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="20dp"
+            android:layout_marginBottom="10dp"
+            android:lineSpacingExtra="8dp"
             android:text="explane_text"
             android:textColor="#555555"
             android:textSize="15sp"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/header_title" />

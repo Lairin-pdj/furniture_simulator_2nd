@@ -12,7 +12,7 @@
         android:id="@+id/tab_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="80dp"
+        android:layout_marginTop="60dp"
         app:tabMinWidth="100dp"
         app:tabTextColor="@color/white"
         app:tabIndicatorColor="@color/white">
@@ -23,20 +23,20 @@
         android:id="@+id/view_pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="70dp"
+        android:layout_marginTop="60dp"
         android:overScrollMode="never"/>
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="60dp"
         android:background="@color/black"
         android:adjustViewBounds="true"
         android:scaleType="centerCrop">
 
         <ImageButton
             android:id="@+id/imageButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_gravity="start|top"
             android:layout_marginStart="7dp"
             android:layout_marginTop="10dp"
@@ -45,7 +45,7 @@
 
         <TextView
             android:layout_width="300dp"
-            android:layout_height="40dp"
+            android:layout_height="35dp"
             android:layout_gravity="center"
             android:gravity="center"
             android:text="Create"
@@ -61,12 +61,12 @@
         android:id="@+id/preview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="140dp"
-        android:layout_marginBottom="200dp"/>
+        android:layout_marginTop="130dp"
+        android:layout_marginBottom="210dp"/>
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="200dp"
+        android:layout_height="210dp"
         android:layout_gravity="bottom">
 
         <Button
@@ -83,7 +83,7 @@
         android:id="@+id/objectpreview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="140dp"
+        android:layout_marginTop="130dp"
         android:background="@color/black"
         android:visibility="invisible">
 
@@ -93,7 +93,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="20dp"
             android:layout_marginEnd="20dp"
-            android:layout_marginBottom="110dp"
+            android:layout_marginBottom="105dp"
             android:adjustViewBounds="true"
             android:layout_gravity="center"/>
 

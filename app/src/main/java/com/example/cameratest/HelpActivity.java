@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -13,23 +12,22 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
-import com.bumptech.glide.load.resource.gif.GifDrawable;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
 
 import me.relex.circleindicator.CircleIndicator3;
@@ -41,36 +39,33 @@ public class HelpActivity extends AppCompatActivity {
     private int nowPosition = 0;
 
     private int[] images = new int[]{
-            R.drawable.plane_tutorial,
-            R.drawable.plane_tutorial,
-            R.drawable.plane_tutorial,
-            R.drawable.plane_tutorial,
-            R.drawable.plane_tutorial,
-            R.drawable.plane_tutorial,
-            R.drawable.plane_tutorial,
-            R.drawable.plane_tutorial
+            R.drawable.help_media01,
+            R.drawable.help_media02,
+            R.drawable.help_media03,
+            R.drawable.help_media04,
+            R.drawable.help_media05,
+            R.drawable.help_media06,
+            R.drawable.help_media07
     };
 
     private String[] headers = new String[]{
             "모델을 배치하는 방법",
             "모델을 조작하는 방법",
-            "모델들을 제거하거나 바닥을 재설정하는 방법",
+            "모델들 제거 및 바닥을 재설정 방법",
             "간편하게 목록 여는 방법",
             "가구를 생성하는 방법",
             "가구를 다운로드하는 방법",
-            "가구를 업로드하는 방법",
-            "가구를 지우는 방법"
+            "가구를 업로드하거나 지우는 방법"
     };
 
     private String[] explanes = new String[]{
-            "모델을 배치하는 방법_explane",
-            "모델을 조작하는 방법_explane",
-            "모델들을 제거하거나 바닥을 재설정하는 방법_explane",
-            "간편하게 목록 여는 방법_explane",
-            "가구를 생성하는 방법_explane",
-            "가구를 다운로드하는 방법_explane",
-            "가구를 업로드하는 방법_explane",
-            "가구를 지우는 방법_explane"
+            "'+' 버튼으로 가구 목록을 열어주세요.\n원하시는 가구를 선택하시면 왼쪽 위에 표시가 됩니다.\n인식된 바닥을 터치하면 그 곳에 모델이 배치돼요.",
+            "터치를 통해 모델을 선택하면 파란 원 표식이 발생해요.\n선택한 모델에 다음과 같은 조작을 할 수 있어요.\nDouble Click : 자리 이동\nHorizontal Slide : 회전\nPinch Zoom : 확대 / 축소",
+            "모델들을 전부 제거하고 싶은 경우에는 '모델만 제거'\n바닥 인식이 제대로 되지 않은 경우는 '바닥까지 초기화'",
+            "슬라이드를 통해 여닫을 수 있어요.\n다만 메뉴는 가구 목록이 열려있을 때만 열 수 있어요.",
+            "메뉴에서 Model Create를 클릭하여 진입해주세요.\n가구로 만들고 싶은 사물을 촬영한 뒤,\n이름을 설정해주면 가구가 생성돼요.\n참고로, 이름은 최소 2글자 이상 이여야해요.",
+            "메뉴에서 Download를 클릭하여 진입해주세요.\n원하시는 가구를 클릭하여 다운로드할 수 있어요.\n오른쪽 위의 돋보기 버튼을 통해 검색도 가능해요.",
+            "메뉴에서 (Upload or Delete)를 클릭해주세요.\n(업로드 or 삭제) 모드에 진입하게 되고,\n원하는 가구를 선택하여 (업로드 or 삭제)가 가능해요."
     };
 
     @Override
@@ -119,15 +114,22 @@ public class HelpActivity extends AppCompatActivity {
                 RecyclerView recyclerView = (RecyclerView) viewPager.getChildAt(0);
                 RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(position);
                 if (holder != null) {
+                    Log.d("webp", position + " load image check");
                     ImageView imageView = holder.itemView.findViewById(R.id.image_slider);
-                    Glide.with(getApplicationContext()).load(images[position]).into(imageView);
+                    Glide.with(getApplicationContext())
+                            .asDrawable()
+                            .load(images[position])
+                            .transition(DrawableTransitionOptions.withCrossFade(400))
+                            .into(imageView);
+                    //.skipmemory
+                    // 메모리 폭주로 인한 갱신효과에 의해 일단 처리
                 }
                 nowPosition = position;
             }
         });
 
         indicator.setViewPager(viewPager);
-        indicator.createIndicators(8, 0);
+        indicator.createIndicators(7, 0);
     }
 
     @Override
@@ -153,7 +155,7 @@ public class HelpActivity extends AppCompatActivity {
     }
 
     public void forwardClick(View view){
-        if (nowPosition != 7){
+        if (nowPosition != 6){
             nowPosition += 1;
             viewPager.setCurrentItem(nowPosition);
         }

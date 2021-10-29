@@ -277,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         super.onCreate(savedInstanceState);
         if (savedInstanceState != null){
             isFirst = savedInstanceState.getBoolean("first", true);
+            Log.d("first check", isFirst + " restore");
         }
         getInstance = this;
 
@@ -339,7 +340,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         setViewPagerSubmenu();
 
         // 환영인사
+        Log.d("firstcheck", "create");
         if (isFirst) {
+            Log.d("firstcheck", "hello");
             LayoutInflater inflater = getLayoutInflater();
             View toastDesign = inflater.inflate(R.layout.toast, null);
             TextView toastText = toastDesign.findViewById(R.id.toast_text);
@@ -458,6 +461,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             sharedSession = null;
         }
 
+        Log.d("first check", "destroyed");
         super.onDestroy();
     }
 
@@ -1307,6 +1311,13 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 }
                 else{
                     isSubmenu = true;
+                    // 모드 정리
+                    if (isDel){
+                        furDeleteClick(null);
+                    }
+                    if (isUpload){
+                        uploadClick(null);
+                    }
                 }
             }
         });
@@ -1396,6 +1407,36 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         if(first){
             spref.edit().putBoolean("isFirstRun", false).apply();
 
+            AlertDialog.Builder alert = new AlertDialog.Builder(this, R.style.DialogSmall);
+            alert.setTitle("안녕하세요!");
+            alert.setIcon(R.drawable.main_character);
+            alert.setMessage("처음 앱을 사용하시는군요.\n도움말을 읽어 보시는건 어떨까요?");
+            alert.setPositiveButton("보러가기", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                    Intent intent = new Intent(getApplicationContext(), HelpActivity.class);
+                    startActivityForResult(intent, 2);
+                    overridePendingTransition(R.anim.activity_left_enter, R.anim.activity_left_exit);
+                }
+            });
+            alert.setNeutralButton("건너뛰기", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.cancel();
+                }
+            });
+            alert.setCancelable(false);
+
+            Handler handler = new Handler();
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    alert.show();
+                }
+            }, 2000);
+
+            /*
             Handler handler = new Handler();
             handler.postDelayed(new Runnable() {
                 @Override
@@ -1417,6 +1458,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     overridePendingTransition(R.anim.activity_left_enter, R.anim.activity_left_exit);
                 }
             }, 2000);
+            */
         }
     }
 
@@ -2325,8 +2367,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState, @NonNull PersistableBundle outPersistentState) {
-        super.onSaveInstanceState(outState, outPersistentState);
         outState.putBoolean("first", false);
         outPersistentState.putBoolean("first", false);
+        super.onSaveInstanceState(outState, outPersistentState);
+        Log.d("first check", isFirst + " restore");
     }
 }

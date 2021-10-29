@@ -9,14 +9,14 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="60dp"
         android:background="@drawable/download_bar_back"
         android:adjustViewBounds="true"
         android:scaleType="centerCrop">
 
         <TextView
             android:layout_width="300dp"
-            android:layout_height="40dp"
+            android:layout_height="35dp"
             android:layout_gravity="center"
             android:gravity="center"
             android:text="Furnitures"
@@ -31,11 +31,11 @@
     <EditText
         android:id="@+id/search"
         android:layout_width="match_parent"
-        android:layout_height="54dp"
+        android:layout_height="50dp"
         android:layout_gravity="top|start"
         android:layout_marginStart="65dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginTop="5dp"
+        android:layout_marginEnd="5dp"
         android:textSize="20dp"
         android:hint="검색어를 입력해주세요."
         android:singleLine="true"
@@ -65,8 +65,8 @@
 
     <ImageButton
         android:id="@+id/searchButton"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_gravity="end|top"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="7dp"
@@ -75,8 +75,8 @@
 
     <ImageButton
         android:id="@+id/imageButton"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_gravity="start|top"
         android:layout_marginStart="7dp"
         android:layout_marginTop="10dp"
@@ -88,7 +88,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_gravity="top"
-        android:layout_marginTop="70dp"
+        android:layout_marginTop="60dp"
         android:adjustViewBounds="true"
         android:scaleType="centerCrop"
         android:background="#DDDDDD"

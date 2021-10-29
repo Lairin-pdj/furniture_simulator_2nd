@@ -5,6 +5,13 @@
     android:layout_height="match_parent"
     android:background="@drawable/left_corner_shape">
 
+    <ImageView
+        android:layout_width="3dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center_vertical|start"
+        android:layout_marginStart="3dp"
+        android:background="@drawable/touch_line_checker"/>
+
     <TextView
         android:layout_width="100dp"
         android:layout_height="30dp"

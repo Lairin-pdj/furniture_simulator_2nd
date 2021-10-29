@@ -154,8 +154,12 @@ public class SettingActivity extends AppCompatActivity {
                             break;
                     }
                     setContentView(R.layout.activity_setting);
-                    getFragmentManager().isDestroyed();
-                    getSupportFragmentManager().beginTransaction().replace(R.id.setting, new PreferenceFragment()).commit();
+                    if (getFragmentManager() != null) {
+                        getFragmentManager().isDestroyed();
+                    }
+                    if (getSupportFragmentManager() != null) {
+                        getSupportFragmentManager().beginTransaction().replace(R.id.setting, new PreferenceFragment()).commit();
+                    }
                     pref.registerOnSharedPreferenceChangeListener(listener);
                     break;
                 case "plane":
