@@ -277,6 +277,9 @@ public class DownloadActivity extends AppCompatActivity {
             // 연결에 실패한 경우
             else{
                 connect.bringToFront();
+                adapter.resetItems();
+                adapter.notifyDataSetChanged();
+                recyclerView.setAdapter(adapter);
                 connect.setVisibility(View.VISIBLE);
             }
         }
