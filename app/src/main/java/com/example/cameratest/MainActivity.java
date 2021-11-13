@@ -206,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     // 업로드용 변수
     // 캡슐화 필요
-    public final static String IP_ADDRESS = "13.125.254.183";
+    public String IP_ADDRESS;
 
     // UI구현을 위한 변수들
     public static MainActivity getInstance;
@@ -356,6 +356,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             toast.show();
             isFirst = false;
         }
+
+        // ip 세팅
+        IP_ADDRESS = getString(R.string.server_IP);
     }
 
     @Override

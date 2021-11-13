@@ -547,19 +547,35 @@ public class CreateActivity extends AppCompatActivity {
         Bitmap bitmap = null;
 
         try {
-            //obj 저장
-            inputStream = am.open("models/create2d.obj");
-            obj = ObjReader.read(inputStream);
-            outputStream = new FileOutputStream(pathModel + "/" + modelName +".obj");
-            ObjWriter.write(obj, outputStream);
-
-            //jpg 저장
+            // jpg 저장
             inputStream = new FileInputStream(pathTemp);
             bitmap = BitmapFactory.decodeStream(inputStream);
             outputStream = new FileOutputStream(pathModel + "/" + modelName + ".png");
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
 
-            //priview 저장
+            // obj 저장
+            inputStream = am.open("models/create2d.obj");
+            obj = ObjReader.read(inputStream);
+            // 가로세로 비율 적용
+            int height = bitmap.getHeight();
+            int width = bitmap.getWidth();
+            float rate = (float)height / width;
+            if (rate >= 1){
+                obj.addVertex((float)(-0.080 / rate), (float)0.0000, (float)0.0000);
+                obj.addVertex((float)(0.080 / rate), (float)0.0000, (float)0.0000);
+                obj.addVertex((float)(-0.080 / rate), (float)0.1600, (float)0.0000);
+                obj.addVertex((float)(0.080 / rate), (float)0.1600, (float)0.0000);
+            }
+            else{
+                obj.addVertex((float)-0.080, (float)0.0000, (float)0.0000);
+                obj.addVertex((float)0.080, (float)0.0000, (float)0.0000);
+                obj.addVertex((float)-0.080, (float)(0.1600 * rate), (float)0.0000);
+                obj.addVertex((float)0.080, (float)(0.1600 * rate), (float)0.0000);
+            }
+            outputStream = new FileOutputStream(pathModel + "/" + modelName +".obj");
+            ObjWriter.write(obj, outputStream);
+
+            // priview 저장
             inputStream = new FileInputStream(pathTemp);
             bitmap = BitmapFactory.decodeStream(inputStream);
             outputStream = new FileOutputStream(pathPreviews + "/" + modelName + "preview.png");

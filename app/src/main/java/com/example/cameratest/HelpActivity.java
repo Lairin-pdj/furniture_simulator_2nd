@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -22,10 +23,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.integration.webp.decoder.WebpDecoder;
+import com.bumptech.glide.integration.webp.decoder.WebpDrawable;
 import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
+import com.bumptech.glide.load.resource.gif.GifDrawable;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.Target;
@@ -114,15 +118,27 @@ public class HelpActivity extends AppCompatActivity {
                 RecyclerView recyclerView = (RecyclerView) viewPager.getChildAt(0);
                 RecyclerView.ViewHolder holder = recyclerView.findViewHolderForAdapterPosition(position);
                 if (holder != null) {
-                    Log.d("webp", position + " load image check");
                     ImageView imageView = holder.itemView.findViewById(R.id.image_slider);
                     Glide.with(getApplicationContext())
                             .asDrawable()
                             .load(images[position])
+                            .listener(new RequestListener<Drawable>() {
+                                @Override
+                                public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
+                                    return false;
+                                }
+
+                                @Override
+                                public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                                    if (resource instanceof WebpDrawable){
+                                        ((WebpDrawable) resource).setLoopCount(1);
+                                        ((WebpDrawable) resource).start();
+                                    }
+                                    return false;
+                                }
+                            })
                             .transition(DrawableTransitionOptions.withCrossFade(400))
                             .into(imageView);
-                    //.skipmemory
-                    // 메모리 폭주로 인한 갱신효과에 의해 일단 처리
                 }
                 nowPosition = position;
             }

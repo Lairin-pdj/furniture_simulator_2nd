@@ -61,7 +61,7 @@ import de.javagl.obj.ObjWriter;
 public class DownloadActivity extends AppCompatActivity {
     // ip주소
     // 캡슐화 필요
-    private final static String IP_ADDRESS = "13.125.254.183";
+    private String IP_ADDRESS;
     private final static String TAG = "php";
 
     // 저장을 위한 변수들
@@ -147,6 +147,9 @@ public class DownloadActivity extends AppCompatActivity {
                 }
             }
         });
+
+        // ip 세팅
+        IP_ADDRESS = getString(R.string.server_IP);
 
         // 다운로드 목록 세팅
         setDownloadList(null, false);
