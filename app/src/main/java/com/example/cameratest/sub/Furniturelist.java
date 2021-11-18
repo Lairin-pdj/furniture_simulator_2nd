@@ -475,6 +475,8 @@ public class Furniturelist extends Fragment {
                 conn = (HttpURLConnection) url.openConnection();
                 conn.setDoInput(true); // Allow Inputs
                 conn.setDoOutput(true); // Allow Outputs
+                conn.setReadTimeout(5000);
+                conn.setConnectTimeout(5000);
                 conn.setUseCaches(false); // Don't use a Cached Copy
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Connection", "Keep-Alive");
