@@ -431,7 +431,6 @@ public class Furniturelist extends Fragment {
             super.onPostExecute(result);
 
             progressDialog.dismiss();
-            Log.d(TAG, "response - " + result);
 
             // 결과가 도착한 경우
             if (result != null){
@@ -447,7 +446,16 @@ public class Furniturelist extends Fragment {
             }
             // 연결에 실패한 경우
             else{
-                Log.d(TAG, "connect failed");
+                AlertDialog.Builder alert = new AlertDialog.Builder(getContext(), R.style.Dialog);
+                alert.setTitle("모델 업로드 실패");
+                alert.setMessage("인터넷 연결을 확인해주세요.");
+                alert.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                });
+                alert.show();
             }
         }
 
