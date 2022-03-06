@@ -23,7 +23,7 @@ aws을 이용하여 웹서버를 유지하고 서버를 통해 가구 데이터�
 * 작동사진
 ![그림1](https://user-images.githubusercontent.com/70496139/156913339-ccadf46d-f2e9-4340-8d87-488773cf53c0.png)
 ![그림2](https://user-images.githubusercontent.com/70496139/156913345-9dbb46ab-09b2-4a42-a4ab-e7b94a6e82db.png)
-* 작동영상 링크
+* 소개영상 및 작동영상 링크
 [![Video Label](https://user-images.githubusercontent.com/70496139/156912991-62fa79b8-5287-4c10-ba4c-fc53127e3c15.png)](https://www.youtube.com/watch?v=zwWGH8HwvcU)
 </br>  
 </br>  
