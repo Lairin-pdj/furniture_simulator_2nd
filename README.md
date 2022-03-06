@@ -21,7 +21,7 @@ aws을 이용하여 웹서버를 유지하고 서버를 통해 가구 데이터�
   
 ## 작동 사진 및 영상  
 
-[![Video Label]](https://www.youtube.com/watch?v=zwWGH8HwvcU)
+[![Video Label](https://user-images.githubusercontent.com/70496139/156912991-62fa79b8-5287-4c10-ba4c-fc53127e3c15.png)](https://www.youtube.com/watch?v=zwWGH8HwvcU)
    
    
 ## 개발 진행 과정
